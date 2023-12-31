@@ -18,9 +18,9 @@ deeptoken = os.environ.get("DEEPINFRA_API_TOKEN")
 # Accessing the DEEPINFRA_API_TOKEN variable
 compressor_llm = DeepInfra(model_id="mistralai/Mistral-7B-Instruct-v0.1")
 compressor_llm.model_kwargs = {
-    "temperature": 0.1,
-    "repetition_penalty": 1.2,
-    "max_new_tokens": 500,
+    "temperature": 0.4,
+    "repetition_penalty": 1,
+    "max_new_tokens": 1000,
     "top_p": 0.90,
 }
 
