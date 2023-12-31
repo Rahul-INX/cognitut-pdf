@@ -170,43 +170,46 @@ if doc_mode:
                     )
 
                 user_query = st.chat_input('Enter your query here ....')
-                docs = ensemble_retriever.get_relevant_documents(user_query)
 
-                if compression_mode:
-                    # Compression mode is enabled
-                    compressor = LLMChainExtractor.from_llm(compressor_llm)
-                else:
-                    # Compression mode is disabled
-                    compressor = EmbeddingsFilter(embeddings=embeddings, similarity_threshold=0.75)
-                    print("using similarity_threshold")
+                if user_query is not None:
+                    # Continue with the code execution
+                    docs = ensemble_retriever.get_relevant_documents(user_query)
 
-                compression_retriever = ContextualCompressionRetriever(base_compressor=compressor, base_retriever=ensemble_retriever)
-                compressed_docs = compression_retriever.get_relevant_documents(user_query)
+                    if compression_mode:
+                        # Compression mode is enabled
+                        compressor = LLMChainExtractor.from_llm(compressor_llm)
+                    else:
+                        # Compression mode is disabled
+                        compressor = EmbeddingsFilter(embeddings=embeddings, similarity_threshold=0.75)
+                        print("using similarity_threshold")
 
-                metadata_info = []
-                for i in range(len(compressed_docs)):    
-                    metadata_info.append('\''+str(compressed_docs[i].metadata)[23:])
+                    compression_retriever = ContextualCompressionRetriever(base_compressor=compressor, base_retriever=ensemble_retriever)
+                    compressed_docs = compression_retriever.get_relevant_documents(user_query)
 
-                def chat_model(model_name):
-                    llm = DeepInfra(model_id=model_name)
-                    llm.model_kwargs = {
-                        "temperature": 0.2,
-                        "repetition_penalty": 1.2,
-                        "max_new_tokens": 512,
-                        "top_p": 0.9,
-                    }
-                    return llm
+                    metadata_info = []
+                    for i in range(len(compressed_docs)):    
+                        metadata_info.append('\''+str(compressed_docs[i].metadata)[23:])
 
-                llm = chat_model(chat_model_name)
+                    def chat_model(model_name):
+                        llm = DeepInfra(model_id=model_name)
+                        llm.model_kwargs = {
+                            "temperature": 0.2,
+                            "repetition_penalty": 1.2,
+                            "max_new_tokens": 512,
+                            "top_p": 0.9,
+                        }
+                        return llm
 
-                context = "\n".join([f"{doc.page_content}\nMetadata: {doc.metadata}" for doc in compressed_docs])
-                response = llm(context=context, prompt=user_query)
-                
-                # Save user input and LM output to session state
-                st.session_state.messages.append({"role": "user", "content": user_query})
-                st.session_state.messages.append({"role": "ai", "content": response})
-                # Display LM output
-                with st.chat_message("ai", avatar='👨‍🏫'):
-                    st.markdown(response)
-                with st.expander("Click To Show Context"):
-                   st.write(context)
+                    llm = chat_model(chat_model_name)
+
+                    context = "\n".join([f"{doc.page_content}\nMetadata: {doc.metadata}" for doc in compressed_docs])
+                    response = llm(context=context, prompt=user_query)
+
+                    # Save user input and LM output to session state
+                    st.session_state.messages.append({"role": "user", "content": user_query})
+                    st.session_state.messages.append({"role": "ai", "content": response})
+                    # Display LM output
+                    with st.chat_message("ai", avatar='👨‍🏫'):
+                        st.markdown(response)
+                    with st.expander("Click To Show Context"):
+                        st.write(context)
