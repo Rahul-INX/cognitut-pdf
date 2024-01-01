@@ -8,14 +8,25 @@ from langchain.llms import DeepInfra
 from dotenv import load_dotenv
 import streamlit as st
 import os
-import pandas as pd
 import re
+from datetime import datetime
+import toml
+from streamlit_gsheets import GSheetsConnection
+import pandas as pd
 
 load_dotenv()
+secrets = toml.load(".streamlit/secrets.toml")
 
 # Accessing the OPENAI_API_KEY and DEEPINFRA_API_TOKEN variables
-openaiapikey = os.environ.get("OPENAI_API_KEY")
-deeptoken = os.environ.get("DEEPINFRA_API_TOKEN")
+if (os.environ.get("OPENAI_API_KEY") != None):
+    openaiapikey = os.environ.get("OPENAI_API_KEY")
+else:
+    openaiapikey = secrets["OPENAI_API_KEY"]
+
+if(os.environ.get("DEEPINFRA_API_TOKEN")!=None):
+    deeptoken = os.environ.get("DEEPINFRA_API_TOKEN")
+else:
+    deeptoken = secrets["OPENAI_API_KEY"]
 
 # Accessing the DEEPINFRA_API_TOKEN variable
 compressor_llm = DeepInfra(model_id="mistralai/Mistral-7B-Instruct-v0.1")
@@ -50,17 +61,8 @@ def doc_loader(doc_path):
     documents = text_splitter.split_documents(docs)
     return documents
 
-
-
-
-
-
-
-
-
-
-
-
+# Get the current system time
+current_time = datetime.now()
 
 
 # Initialize Streamlit's session state
@@ -70,32 +72,12 @@ if 'val_vm' not in st.session_state:
     st.session_state.val_vm = None
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 # Initialize Streamlit
 st.set_page_config(layout="wide", page_title="COGNITUT")
 st.title(":red[COGNITUT]")
 
-
-
-
+with st.spinner(":red[LOADING THE DATABASE....]"):
+    conn = st.connection('gsheets',type=GSheetsConnection)
 
 
 
@@ -169,42 +151,12 @@ with container:
                         error_message += "Name (avoid using dots)"
                     st.error(error_message)
 
-
-
-
-
-
-
-
-
-
-
-
-
 if (st.session_state.val_user and st.session_state.val_vm !=None):
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
     # Display initial chat message
     with st.chat_message("ai", avatar="👨‍🏫"):
-        st.write("Hi, how may I help you today ?")
+        st.write(f"**:blue[Hi {st.session_state.val_user}, How May I Help You Today ?]**")
 
     # Initialize Streamlit session state
     if "messages" not in st.session_state:
@@ -248,7 +200,7 @@ if (st.session_state.val_user and st.session_state.val_vm !=None):
 
         # Subject selection based on the selected department and semester
         subject_options = all_subjects.get(department, {}).get(semester, [])
-        subject = st.sidebar.selectbox("Choose your subject", subject_options)
+        subject = st.sidebar.selectbox("Choose your subject", subject_options,index=None)
 
         # Chat model selection
         chat_model_name = st.sidebar.selectbox(
@@ -377,9 +329,32 @@ if (st.session_state.val_user and st.session_state.val_vm !=None):
                                     """)
 
                         if user_query is not None:
+
                             # Save user input and LM output to session state
                             st.session_state.messages.append({"role": "user", "content": user_query})
                             st.session_state.messages.append({"role": "ai", "content": response})
+
+                            database = conn.read(worksheet='Sheet1', usecols=list(range(11)),ttl=0)
+
+                            # Creating a new entry
+                            new_data_entry = pd.DataFrame({
+                                'user_name': [st.session_state.val_user],
+                                'vm_number': [st.session_state.val_vm],
+                                'user_query': [user_query],
+                                'generated_response': [response],
+                                'llm': [chat_model_name],
+                                'doc_mode': [doc_mode],
+                                'context_compression': [compression_mode],
+                                'department': [department],
+                                'semester': [semester],
+                                'subject': [subject],
+                                'date_time': [current_time]
+                            })
+
+                            # Concatenating the new entry to the existing DataFrame
+                            new_database = pd.concat([new_data_entry, database], ignore_index=True)
+                            conn.update(worksheet='Sheet1',data=new_database)
+
 
                             # Display LM output
                             with st.chat_message("user", avatar="🟢"):
@@ -389,7 +364,8 @@ if (st.session_state.val_user and st.session_state.val_vm !=None):
                                 st.write(metadata_info)
                             with st.expander("SHOW CONTEXT"):
                                 st.write(context)
-        
+        else:
+            st.warning(':red[PLEASE CHOOSE CORRECT OPTIONS FROM THE LEFT SIDEBAR]')
 
 
 
@@ -450,17 +426,55 @@ if (st.session_state.val_user and st.session_state.val_vm !=None):
                             [INST]{system_message_inst}[/INST]<->
                             [QUER]{user_query}[/QUER]""")
 
-
-
-
-
                 if user_query is not None:
                     # Save user input and LM output to session state
                     st.session_state.messages.append({"role": "user", "content": user_query})
                     st.session_state.messages.append({"role": "ai", "content": response})
+
+                    compression_mode=None
+                    department=None
+                    subject=None
+                    semester=None
+                    doc_mode=False
+
+                    # Creating a new entry
+                    database = conn.read(worksheet='Sheet1', usecols=list(range(11)),ttl=0)
+
+                    # Creating a new entry
+                    new_data_entry = pd.DataFrame({
+                        'user_name': [st.session_state.val_user],
+                        'vm_number': [st.session_state.val_vm],
+                        'user_query': [user_query],
+                        'generated_response': [response],
+                        'llm': [chat_model_name],
+                        'doc_mode': [doc_mode],
+                        'context_compression': [compression_mode],
+                        'department': [department],
+                        'semester': [semester],
+                        'subject': [subject],
+                        'date_time': [current_time]
+                    })
+
+                    # Concatenating the new entry to the existing DataFrame
+                    new_database = pd.concat([new_data_entry, database], ignore_index=True)
+                    conn.update(worksheet='Sheet1',data=new_database)
+
+
                     # Display LM output
                     with st.chat_message("user", avatar="🟢"):
                         st.markdown(user_query)
                     with st.chat_message("ai", avatar="👨‍🏫"):
                         st.markdown(response)
                     st.rerun()
+
+
+
+
+
+
+
+
+
+
+
+
