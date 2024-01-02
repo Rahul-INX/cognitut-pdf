@@ -220,7 +220,20 @@ if (st.session_state.val_user and st.session_state.val_vm !=None):
                     with st.spinner("Vector DB is creating..."):
                         # Load documents using the cached function
                         documents = doc_loader(doc_path)
+                        if (len(documents)==0):
+                            # Check if doc_path is empty
+                            if not os.listdir(doc_path):
+                                # Delete all files in FAISS_DB_PATH
+                                for file_name in os.listdir(FAISS_DB_PATH):
+                                    file_path = os.path.join(FAISS_DB_PATH, file_name)
+                                    try:
+                                        if os.path.isfile(file_path):
+                                            os.remove(file_path)
+                                            st.rerun()
+                                    except Exception as e:
 
+                                        print(f"Error deleting file {file_path}: {e}")
+                                        
                         # Create FAISS database
                         db = FAISS.from_documents(documents, embeddings)
                         db.save_local(FAISS_DB_PATH)
@@ -240,224 +253,224 @@ if (st.session_state.val_user and st.session_state.val_vm !=None):
 
                     # Load documents using the cached function
                     documents = doc_loader(doc_path)
+                    st.write(documents)
+    #                 bm25_retriever = BM25Retriever.from_documents(documents)
+    #                 bm25_retriever.k = 3
 
-                    bm25_retriever = BM25Retriever.from_documents(documents)
-                    bm25_retriever.k = 3
+    #                 # initialize the ensemble retriever
+    #                 ensemble_retriever = EnsembleRetriever(retrievers=[bm25_retriever, faiss_retriever], weights=[0.2, 0.8])
 
-                    # initialize the ensemble retriever
-                    ensemble_retriever = EnsembleRetriever(retrievers=[bm25_retriever, faiss_retriever], weights=[0.2, 0.8])
+    #                 user_query = st.chat_input("Enter your query here ....")
 
-                    user_query = st.chat_input("Enter your query here ....")
+    #                 if user_query is not None:
+    #                     # Continue with the code execution
+    #                     docs = ensemble_retriever.get_relevant_documents(user_query)
 
-                    if user_query is not None:
-                        # Continue with the code execution
-                        docs = ensemble_retriever.get_relevant_documents(user_query)
+    #                     if compression_mode:
+    #                         # Compression mode is enabled
+    #                         compressor = LLMChainExtractor.from_llm(compressor_llm)
+    #                     else:
+    #                         # Compression mode is disabled
+    #                         compressor = EmbeddingsFilter(embeddings=embeddings, similarity_threshold=0.75)
 
-                        if compression_mode:
-                            # Compression mode is enabled
-                            compressor = LLMChainExtractor.from_llm(compressor_llm)
-                        else:
-                            # Compression mode is disabled
-                            compressor = EmbeddingsFilter(embeddings=embeddings, similarity_threshold=0.75)
+    #                     compression_retriever = ContextualCompressionRetriever(base_compressor=compressor, base_retriever=ensemble_retriever)
+    #                     compressed_docs = compression_retriever.get_relevant_documents(user_query)
 
-                        compression_retriever = ContextualCompressionRetriever(base_compressor=compressor, base_retriever=ensemble_retriever)
-                        compressed_docs = compression_retriever.get_relevant_documents(user_query)
+    #                     metadata_info = []
+    #                     for i in range(len(compressed_docs)):
+    #                         metadata_info.append("'" + str(compressed_docs[i].metadata)[23:])
 
-                        metadata_info = []
-                        for i in range(len(compressed_docs)):
-                            metadata_info.append("'" + str(compressed_docs[i].metadata)[23:])
+    #                     def chat_model(model_name):
+    #                         llm = DeepInfra(model_id=model_name)
+    #                         llm.model_kwargs = {
+    #                             "temperature": 0.1,
+    #                             "repetition_penalty": 1.2,
+    #                             "max_new_tokens": 1024,
+    #                             "top_p": 0.9,
+    #                         }
+    #                         return llm
 
-                        def chat_model(model_name):
-                            llm = DeepInfra(model_id=model_name)
-                            llm.model_kwargs = {
-                                "temperature": 0.1,
-                                "repetition_penalty": 1.2,
-                                "max_new_tokens": 1024,
-                                "top_p": 0.9,
-                            }
-                            return llm
+    #                     llm = chat_model(chat_model_name)
 
-                        llm = chat_model(chat_model_name)
+    #                     context = "\n".join([f"{doc.page_content}\nMetadata: {doc.metadata}\n"for doc in compressed_docs])
+    #                     system_message_inst = f"""### Role: Specialized Academic Expert Bot
+    # **Description:**
+    # Specialized Academic Expert dedicated to in-depth knowledge in the {subject} domain, delivering precise and structured information. Committed to addressing user queries with clarity and aligning responses with academic principles.
+    # ### Task:
+    # 1. **Subject-specific Contextual Mastery:**
+    # - Master the art of extracting relevant information in the {subject} context.
+    # - Base responses meticulously on the provided {subject} context.
+    # - Use the relevant information to give a comprehensive answer, adhering strictly to academic standards.
+    # 2. **Thorough {subject} Responsiveness:**
+    # - Demonstrate a commitment to addressing user queries comprehensively in the {subject} field.
+    # - Utilize {subject}-specific context extensively to provide detailed responses.
+    # - Stay within the defined context range and avoid making assumptions beyond the provided information.
+    # 3. **Art of {subject} Language:**
+    # - Employ clear and concise language tailored for the {subject} academic audience.
+    # - Prioritize clarity through strategic use of headings, markdown, subheadings, paragraphs, and bullet points.
+    # - Utilize markdown techniques such as '#' for titles, '*' for highlighting, and '**' for bolding.
+    # 4. **Handling Irrelevance in {subject} Context:**
+    # - Address situations where the {subject} context lacks relevance by responding with "NOT ENOUGH INFORMATION COULD BE FOUND IN THE {subject} CONTEXT..."
+    # - Avoid providing information beyond the specified context range.
+    # 5. **Architectural Clarity in {subject} Responses:**
+    # - Craft responses with a robust structure, specific to the {subject} field.
+    # - Ensure that responses are accessible and understandable to individuals without prior {subject} knowledge.
+    # 6. **Guiding Academic Principles in {subject} Expertise:**
+    # - Uphold academic principles in every response, maintaining a high standard of accuracy and reliability in the {subject} domain.
+    # - Do not hallucinate on information; stay within the confines of the provided context.
+    # ##** Necessity**:
+    # - give a comprehensive, structured answer to the Query
+    # - In the presence of explicit language, comments, vulgar slang, or harmful information, respond with 'I Am a responsible AI. Hence, cannot help you with that' and conclude the response.
+    # """
+    #                     response = llm(
+    #                         f""" |tags:
+    #                         [INST],[/INST] = symbolizes generation Instructions 
+    #                         [CNTX],[/CNTX] = context for the query
+    #                         [QUER],[/QUER] = user query|
+    #                         '<->' = logical link/seperation among entities|
+    #                                 [INST]{system_message_inst}[/INST]<->
+    #                                 [CNTX]{context}[/CNTX]<->
+    #                                 [QUER]{user_query}[/QUER]
+    #                                 """)
 
-                        context = "\n".join([f"{doc.page_content}\nMetadata: {doc.metadata}\n"for doc in compressed_docs])
-                        system_message_inst = f"""### Role: Specialized Academic Expert Bot
-    **Description:**
-    Specialized Academic Expert dedicated to in-depth knowledge in the {subject} domain, delivering precise and structured information. Committed to addressing user queries with clarity and aligning responses with academic principles.
-    ### Task:
-    1. **Subject-specific Contextual Mastery:**
-    - Master the art of extracting relevant information in the {subject} context.
-    - Base responses meticulously on the provided {subject} context.
-    - Use the relevant information to give a comprehensive answer, adhering strictly to academic standards.
-    2. **Thorough {subject} Responsiveness:**
-    - Demonstrate a commitment to addressing user queries comprehensively in the {subject} field.
-    - Utilize {subject}-specific context extensively to provide detailed responses.
-    - Stay within the defined context range and avoid making assumptions beyond the provided information.
-    3. **Art of {subject} Language:**
-    - Employ clear and concise language tailored for the {subject} academic audience.
-    - Prioritize clarity through strategic use of headings, markdown, subheadings, paragraphs, and bullet points.
-    - Utilize markdown techniques such as '#' for titles, '*' for highlighting, and '**' for bolding.
-    4. **Handling Irrelevance in {subject} Context:**
-    - Address situations where the {subject} context lacks relevance by responding with "NOT ENOUGH INFORMATION COULD BE FOUND IN THE {subject} CONTEXT..."
-    - Avoid providing information beyond the specified context range.
-    5. **Architectural Clarity in {subject} Responses:**
-    - Craft responses with a robust structure, specific to the {subject} field.
-    - Ensure that responses are accessible and understandable to individuals without prior {subject} knowledge.
-    6. **Guiding Academic Principles in {subject} Expertise:**
-    - Uphold academic principles in every response, maintaining a high standard of accuracy and reliability in the {subject} domain.
-    - Do not hallucinate on information; stay within the confines of the provided context.
-    ##** Necessity**:
-    - give a comprehensive, structured answer to the Query
-    - In the presence of explicit language, comments, vulgar slang, or harmful information, respond with 'I Am a responsible AI. Hence, cannot help you with that' and conclude the response.
-    """
-                        response = llm(
-                            f""" |tags:
-                            [INST],[/INST] = symbolizes generation Instructions 
-                            [CNTX],[/CNTX] = context for the query
-                            [QUER],[/QUER] = user query|
-                            '<->' = logical link/seperation among entities|
-                                    [INST]{system_message_inst}[/INST]<->
-                                    [CNTX]{context}[/CNTX]<->
-                                    [QUER]{user_query}[/QUER]
-                                    """)
+    #                     if user_query is not None:
 
-                        if user_query is not None:
+    #                         # Save user input and LM output to session state
+    #                         st.session_state.messages.append({"role": "user", "content": user_query})
+    #                         st.session_state.messages.append({"role": "ai", "content": response})
 
-                            # Save user input and LM output to session state
-                            st.session_state.messages.append({"role": "user", "content": user_query})
-                            st.session_state.messages.append({"role": "ai", "content": response})
+    #                         database = conn.read(worksheet='Sheet1', usecols=list(range(11)),ttl=0)
 
-                            database = conn.read(worksheet='Sheet1', usecols=list(range(11)),ttl=0)
+    #                         # Creating a new entry
+    #                         new_data_entry = pd.DataFrame({
+    #                             'user_name': [st.session_state.val_user],
+    #                             'vm_number': [st.session_state.val_vm],
+    #                             'user_query': [user_query],
+    #                             'generated_response': [response],
+    #                             'llm': [chat_model_name],
+    #                             'doc_mode': [doc_mode],
+    #                             'context_compression': [compression_mode],
+    #                             'department': [department],
+    #                             'semester': [semester],
+    #                             'subject': [subject],
+    #                             'date_time': [current_time]
+    #                         })
 
-                            # Creating a new entry
-                            new_data_entry = pd.DataFrame({
-                                'user_name': [st.session_state.val_user],
-                                'vm_number': [st.session_state.val_vm],
-                                'user_query': [user_query],
-                                'generated_response': [response],
-                                'llm': [chat_model_name],
-                                'doc_mode': [doc_mode],
-                                'context_compression': [compression_mode],
-                                'department': [department],
-                                'semester': [semester],
-                                'subject': [subject],
-                                'date_time': [current_time]
-                            })
-
-                            # Concatenating the new entry to the existing DataFrame
-                            new_database = pd.concat([new_data_entry, database], ignore_index=True)
-                            conn.update(worksheet='Sheet1',data=new_database)
-
-
-                            # Display LM output
-                            with st.chat_message("user", avatar="🟢"):
-                                st.markdown(user_query)
-                            with st.chat_message("ai", avatar="👨‍🏫"):
-                                st.markdown(response)
-                                st.write(metadata_info)
-                            with st.expander("SHOW CONTEXT"):
-                                st.write(context)
-        else:
-            st.warning(':red[PLEASE CHOOSE CORRECT OPTIONS FROM THE LEFT SIDEBAR]')
+    #                         # Concatenating the new entry to the existing DataFrame
+    #                         new_database = pd.concat([new_data_entry, database], ignore_index=True)
+    #                         conn.update(worksheet='Sheet1',data=new_database)
 
 
+    #                         # Display LM output
+    #                         with st.chat_message("user", avatar="🟢"):
+    #                             st.markdown(user_query)
+    #                         with st.chat_message("ai", avatar="👨‍🏫"):
+    #                             st.markdown(response)
+    #                             st.write(metadata_info)
+    #                         with st.expander("SHOW CONTEXT"):
+    #                             st.write(context)
+    #     else:
+    #         st.warning(':red[PLEASE CHOOSE CORRECT OPTIONS FROM THE LEFT SIDEBAR]')
 
 
-    else:
-        chat_model_name = st.sidebar.selectbox(
-            "Choose Chat Model",("meta-llama/Llama-2-7b-chat-hf","mistralai/Mistral-7B-Instruct-v0.1","meta-llama/Llama-2-13b-chat-hf", ),index=0)
-        user_query = st.chat_input("Enter your query here ....")
 
-        def chat_model(model_name):
-            llm = DeepInfra(model_id=model_name)
-            llm.model_kwargs = {
-                "temperature": 0.7,
-                "repetition_penalty": 1.2,
-                "max_new_tokens": 1024,
-                "top_p": 0.85,
-            }
-            return llm
 
-        llm = chat_model(chat_model_name)
-        if user_query is not None:
-            with st.spinner(f"**'DOCUMENT MODE =  :red[OFF] | :green[Generating Response]......'**"):
-                system_message_inst = """# Role: Academic Expert
-    **Description:**
-    Dedicated Comprehensive Academic Expert Bot with a profound understanding of various subjects, committed to delivering high-quality, detailed responses. This bot excels in providing precise and structured information, aligning answers with the highest academic standards.
-    ## Task:
-    1. **Subject-specific Contextual Mastery:**
-    - Master the art of extracting relevant information in any academic context.
-    - Base responses meticulously on the provided subject context.
-    - Utilize relevant information to deliver comprehensive answers adhering to academic standards.
-    2. **Thorough Responsiveness:**
-    - Demonstrate a commitment to addressing user queries comprehensively across diverse academic fields.
-    - Utilize subject-specific context extensively to provide detailed, well-informed responses.
-    3. **Art of Academic Language:**
-    - Employ clear and concise language tailored for a diverse academic audience.
-    - Prioritize clarity through strategic use of headings, markdown, subheadings, paragraphs, and bullet points.
-    - Use markdown techniques for titles (#), highlighting (*), and bolding (**).
-    4. **Handling Irrelevance in Academic Context:**
-    - Address situations where the academic context lacks relevance by responding with "NOT ENOUGH INFORMATION COULD BE FOUND IN THE CONTEXT..."
-    5. **Architectural Clarity in Responses:**
-    - Craft responses with a robust structure applicable to various academic fields.
-    - Ensure that responses are accessible and understandable to individuals without prior knowledge in a specific subject.
-    6. **Guiding Academic Principles:**
-    - Uphold academic principles in every response, maintaining a high standard of accuracy, reliability, and depth across disciplines.
-    ## Markdown Techniques Explanation:
-    - Use '#' for titles, e.g., #Title#
-    - For highlighting and bolding, use '*', e.g., *Highlighted* or **Bolded**.
-    ##** Necessity**:
-    - give a fulfilling , comprehensive, structure answer to the query
-    - In the presence of explicit language, comments, vulgar slang, or harmful information, respond with 'I Am a responsible AI. Hence, cannot help you with that' and conclude the response.
-    """
+    # else:
+    #     chat_model_name = st.sidebar.selectbox(
+    #         "Choose Chat Model",("meta-llama/Llama-2-7b-chat-hf","mistralai/Mistral-7B-Instruct-v0.1","meta-llama/Llama-2-13b-chat-hf", ),index=0)
+    #     user_query = st.chat_input("Enter your query here ....")
+
+    #     def chat_model(model_name):
+    #         llm = DeepInfra(model_id=model_name)
+    #         llm.model_kwargs = {
+    #             "temperature": 0.7,
+    #             "repetition_penalty": 1.2,
+    #             "max_new_tokens": 1024,
+    #             "top_p": 0.85,
+    #         }
+    #         return llm
+
+    #     llm = chat_model(chat_model_name)
+    #     if user_query is not None:
+    #         with st.spinner(f"**'DOCUMENT MODE =  :red[OFF] | :green[Generating Response]......'**"):
+    #             system_message_inst = """# Role: Academic Expert
+    # **Description:**
+    # Dedicated Comprehensive Academic Expert Bot with a profound understanding of various subjects, committed to delivering high-quality, detailed responses. This bot excels in providing precise and structured information, aligning answers with the highest academic standards.
+    # ## Task:
+    # 1. **Subject-specific Contextual Mastery:**
+    # - Master the art of extracting relevant information in any academic context.
+    # - Base responses meticulously on the provided subject context.
+    # - Utilize relevant information to deliver comprehensive answers adhering to academic standards.
+    # 2. **Thorough Responsiveness:**
+    # - Demonstrate a commitment to addressing user queries comprehensively across diverse academic fields.
+    # - Utilize subject-specific context extensively to provide detailed, well-informed responses.
+    # 3. **Art of Academic Language:**
+    # - Employ clear and concise language tailored for a diverse academic audience.
+    # - Prioritize clarity through strategic use of headings, markdown, subheadings, paragraphs, and bullet points.
+    # - Use markdown techniques for titles (#), highlighting (*), and bolding (**).
+    # 4. **Handling Irrelevance in Academic Context:**
+    # - Address situations where the academic context lacks relevance by responding with "NOT ENOUGH INFORMATION COULD BE FOUND IN THE CONTEXT..."
+    # 5. **Architectural Clarity in Responses:**
+    # - Craft responses with a robust structure applicable to various academic fields.
+    # - Ensure that responses are accessible and understandable to individuals without prior knowledge in a specific subject.
+    # 6. **Guiding Academic Principles:**
+    # - Uphold academic principles in every response, maintaining a high standard of accuracy, reliability, and depth across disciplines.
+    # ## Markdown Techniques Explanation:
+    # - Use '#' for titles, e.g., #Title#
+    # - For highlighting and bolding, use '*', e.g., *Highlighted* or **Bolded**.
+    # ##** Necessity**:
+    # - give a fulfilling , comprehensive, structure answer to the query
+    # - In the presence of explicit language, comments, vulgar slang, or harmful information, respond with 'I Am a responsible AI. Hence, cannot help you with that' and conclude the response.
+    # """
                 
-                response = llm(
-                            f"""|tags:
-                            [INST],[/INST] = symbolizes generation Instructions 
-                            [QUER],[/QUER] = user query|
-                            '<->' = logical link/seperation among entities|
-                            [INST]{system_message_inst}[/INST]<->
-                            [QUER]{user_query}[/QUER]""")
+    #             response = llm(
+    #                         f"""|tags:
+    #                         [INST],[/INST] = symbolizes generation Instructions 
+    #                         [QUER],[/QUER] = user query|
+    #                         '<->' = logical link/seperation among entities|
+    #                         [INST]{system_message_inst}[/INST]<->
+    #                         [QUER]{user_query}[/QUER]""")
 
-                if user_query is not None:
-                    # Save user input and LM output to session state
-                    st.session_state.messages.append({"role": "user", "content": user_query})
-                    st.session_state.messages.append({"role": "ai", "content": response})
+    #             if user_query is not None:
+    #                 # Save user input and LM output to session state
+    #                 st.session_state.messages.append({"role": "user", "content": user_query})
+    #                 st.session_state.messages.append({"role": "ai", "content": response})
 
-                    compression_mode=None
-                    department=None
-                    subject=None
-                    semester=None
-                    doc_mode=False
+    #                 compression_mode=None
+    #                 department=None
+    #                 subject=None
+    #                 semester=None
+    #                 doc_mode=False
 
-                    # Creating a new entry
-                    database = conn.read(worksheet='Sheet1', usecols=list(range(11)),ttl=0)
+    #                 # Creating a new entry
+    #                 database = conn.read(worksheet='Sheet1', usecols=list(range(11)),ttl=0)
 
-                    # Creating a new entry
-                    new_data_entry = pd.DataFrame({
-                        'user_name': [st.session_state.val_user],
-                        'vm_number': [st.session_state.val_vm],
-                        'user_query': [user_query],
-                        'generated_response': [response],
-                        'llm': [chat_model_name],
-                        'doc_mode': [doc_mode],
-                        'context_compression': [compression_mode],
-                        'department': [department],
-                        'semester': [semester],
-                        'subject': [subject],
-                        'date_time': [current_time]
-                    })
+    #                 # Creating a new entry
+    #                 new_data_entry = pd.DataFrame({
+    #                     'user_name': [st.session_state.val_user],
+    #                     'vm_number': [st.session_state.val_vm],
+    #                     'user_query': [user_query],
+    #                     'generated_response': [response],
+    #                     'llm': [chat_model_name],
+    #                     'doc_mode': [doc_mode],
+    #                     'context_compression': [compression_mode],
+    #                     'department': [department],
+    #                     'semester': [semester],
+    #                     'subject': [subject],
+    #                     'date_time': [current_time]
+    #                 })
 
-                    # Concatenating the new entry to the existing DataFrame
-                    new_database = pd.concat([new_data_entry, database], ignore_index=True)
-                    conn.update(worksheet='Sheet1',data=new_database)
+    #                 # Concatenating the new entry to the existing DataFrame
+    #                 new_database = pd.concat([new_data_entry, database], ignore_index=True)
+    #                 conn.update(worksheet='Sheet1',data=new_database)
 
 
-                    # Display LM output
-                    with st.chat_message("user", avatar="🟢"):
-                        st.markdown(user_query)
-                    with st.chat_message("ai", avatar="👨‍🏫"):
-                        st.markdown(response)
-                    st.rerun()
+    #                 # Display LM output
+    #                 with st.chat_message("user", avatar="🟢"):
+    #                     st.markdown(user_query)
+    #                 with st.chat_message("ai", avatar="👨‍🏫"):
+    #                     st.markdown(response)
+    #                 st.rerun()
 
 
 
