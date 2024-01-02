@@ -34,8 +34,6 @@ compressor_llm.model_kwargs = {
 
 embeddings = OpenAIEmbeddings(model="text-embedding-ada-002")
 
-
-
 # Initialize the document loader function with caching
 @st.cache_data(show_spinner=True, persist="disk")
 def doc_loader(doc_path):
