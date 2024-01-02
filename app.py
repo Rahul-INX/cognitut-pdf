@@ -65,8 +65,8 @@ if 'val_vm' not in st.session_state:
 
 
 # Initialize Streamlit
-st.set_page_config(layout="wide", page_title="COGNITUT")
-st.title(":red[COGNITUT]")
+st.set_page_config(layout="wide", page_title=":blue[VtmtGPT]")
+st.title(":blue[VtmtGPT]")
 
 with st.spinner(":red[LOADING THE DATABASE....]"):
     conn = st.connection('gsheets',type=GSheetsConnection)
@@ -160,7 +160,7 @@ if (st.session_state.val_user and st.session_state.val_vm !=None):
             st.markdown(msg["content"])
 
     # Sidebar setup
-    st.sidebar.title("WELCOME TO COGNITUT!")
+    st.sidebar.title("WELCOME TO VtmtGPT!")
     doc_mode = st.sidebar.toggle(label="Chat With Documents", value=True)
 
 
