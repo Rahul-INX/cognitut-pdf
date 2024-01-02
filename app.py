@@ -14,20 +14,15 @@ import toml
 from streamlit_gsheets import GSheetsConnection
 import pandas as pd
 
-load_dotenv()
-secrets = toml.load(".streamlit/secrets.toml")
-
+# load_dotenv()
+# secrets = toml.load(".streamlit/secrets.toml")
+ 
+OPENAI_API_KEY=st.secrets.my_keys.OPENAI_API_KEY
 # Accessing the OPENAI_API_KEY and DEEPINFRA_API_TOKEN variables
-if (os.environ.get("OPENAI_API_KEY") != None):
-    openaiapikey = os.environ.get("OPENAI_API_KEY")
-else:
-    openaiapikey = secrets["OPENAI_API_KEY"]
+DEEPINFRA_API_TOKEN=st.secrets.my_keys.DEEPINFRA_API_TOKEN
 
-if(os.environ.get("DEEPINFRA_API_TOKEN")!=None):
-    deeptoken = os.environ.get("DEEPINFRA_API_TOKEN")
-else:
-    deeptoken = secrets["OPENAI_API_KEY"]
-
+os.environ['DEEPINFRA_API_TOKEN']=DEEPINFRA_API_TOKEN
+os.environ['OPENAI_API_KEY'] =OPENAI_API_KEY
 # Accessing the DEEPINFRA_API_TOKEN variable
 compressor_llm = DeepInfra(model_id="mistralai/Mistral-7B-Instruct-v0.1")
 compressor_llm.model_kwargs = {
@@ -39,10 +34,7 @@ compressor_llm.model_kwargs = {
 
 embeddings = OpenAIEmbeddings(model="text-embedding-ada-002")
 
-# Check if environment variables are set
-if openaiapikey is None or deeptoken is None:
-    st.error("Environment variables not set. Please configure OPENAI_API_KEY and DEEPINFRA_API_TOKEN.")
-    st.stop()
+
 
 # Initialize the document loader function with caching
 @st.cache_data(show_spinner=True, persist="disk")
