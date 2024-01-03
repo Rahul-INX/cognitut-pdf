@@ -105,12 +105,9 @@ def validate_name(name):
     # Strip leading and trailing whitespaces
     name_stripped = name.strip()
 
-    # Check if there are extra spaces inside the name
-    if '  ' in name_stripped:
-        return False, name_stripped
 
     # Updated regex to allow dots anywhere in the name
-    regex = r"^[a-zA-Z \s]{1,15}$"  # Removed dot from the regex
+    regex = r"^[a-zA-Z \s]{1,35}$"  # Removed dot from the regex
     return bool(re.match(regex, name_stripped)), name_stripped
 
 # Centering the form on the screen
