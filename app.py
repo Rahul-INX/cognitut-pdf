@@ -124,6 +124,17 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
+st.markdown(
+    """
+    <style>
+    #MainMenu{visibility:hidden;}
+    footer{visibility :hidden;}
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
+
 
 # Creating a centered container
 container = st.container()
