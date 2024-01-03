@@ -6,7 +6,7 @@ from langchain.retrievers import (BM25Retriever,EnsembleRetriever,ContextualComp
 from langchain.retrievers.document_compressors import (LLMChainExtractor,EmbeddingsFilter)
 from langchain.llms import DeepInfra
 from dotenv import load_dotenv
-import streamlit as st
+import streamlit as st,time
 import os
 import re
 from datetime import datetime
@@ -53,7 +53,30 @@ def doc_loader(doc_path):
 
 # Get the current system time
 current_time = datetime.now()
+def process_documents_in_batches(doc_path, embeddings, batch_size=400):
+    documents = doc_loader(doc_path)
+    processed = 0
+    db = None
 
+    while processed < len(documents):
+        try:
+            batch_docs = documents[processed:processed + batch_size]
+            batch_db = FAISS.from_documents(batch_docs, embeddings)
+            
+            if db is None:
+                db = batch_db
+            else:
+                db.merge_from(batch_db)
+
+            processed += len(batch_docs)
+            db.save_local(FAISS_DB_PATH)
+
+        except Exception as e:
+            print(f"Error encountered: {e}")
+            print("Waiting for 5 seconds before retrying...")
+            time.sleep(5)
+
+    return db
 
 # Initialize Streamlit's session state
 if 'val_user' not in st.session_state:
@@ -63,8 +86,8 @@ if 'val_vm' not in st.session_state:
 
 
 # Initialize Streamlit
-st.set_page_config(layout="wide", page_title=":blue[VtmtGPT]")
-st.title(":blue[VtmtGPT]")
+st.set_page_config(layout="wide", page_title=":blue[COGNITUT]")
+st.title(":blue[COGNITUT]")
 
 with st.spinner(":red[LOADING THE DATABASE....]"):
     conn = st.connection('gsheets',type=GSheetsConnection)
@@ -158,7 +181,7 @@ if (st.session_state.val_user and st.session_state.val_vm !=None):
             st.markdown(msg["content"])
 
     # Sidebar setup
-    st.sidebar.title("WELCOME TO VtmtGPT!")
+    st.sidebar.title("WELCOME TO COGNITUT!")
     doc_mode = st.sidebar.toggle(label="Chat With Documents", value=True)
 
 
@@ -212,38 +235,25 @@ if (st.session_state.val_user and st.session_state.val_vm !=None):
                 os.makedirs(FAISS_DB_PATH)
 
             # Check if FAISS_DB_PATH is empty
+            # Modify the FAISS database creation part in your main code
             if not os.listdir(FAISS_DB_PATH):
                 if os.listdir(doc_path):
-                    # Display loading message while creating the FAISS database
                     with st.spinner("Vector DB is creating..."):
-                        # Load documents using the cached function
-                        documents = doc_loader(doc_path)
-                        if (len(documents)==0):
-                            # Check if doc_path is empty
-                            if not os.listdir(doc_path):
-                                # Delete all files in FAISS_DB_PATH
-                                for file_name in os.listdir(FAISS_DB_PATH):
-                                    file_path = os.path.join(FAISS_DB_PATH, file_name)
-                                    try:
-                                        if os.path.isfile(file_path):
-                                            os.remove(file_path)
-                                            st.rerun()
-                                    except Exception as e:
-
-                                        print(f"Error deleting file {file_path}: {e}")
-                                        
-                        # Create FAISS database
-                        db = FAISS.from_documents(documents, embeddings)
-                        db.save_local(FAISS_DB_PATH)
-
-                        st.balloons()
-                        st.toast(f"Vector DB created in: {FAISS_DB_PATH[12:]}", icon="✅")
-
-                else:
-                    st.warning("Document directory is empty. No documents found.")
-                    st.toast(f"WARNING : Empty Directory\nLoad Files In {doc_path}", icon="⚠")
+                        if not os.listdir(doc_path):
+                            for file_name in os.listdir(FAISS_DB_PATH):
+                                file_path = os.path.join(FAISS_DB_PATH, file_name)
+                                try:
+                                    if os.path.isfile(file_path):
+                                        os.remove(file_path)
+                                        st.rerun()
+                                except Exception as e:
+                                    print(f"Error deleting file {file_path}: {e}")
+                        else:
+                            # Create FAISS database in batches with error handling
+                            db = process_documents_in_batches(doc_path, embeddings)
+                            st.balloons()
+                            st.toast(f"Vector DB created in: {FAISS_DB_PATH[12:]}", icon="✅")
             else:
-                # FAISS database is not empty
                 db = FAISS.load_local(FAISS_DB_PATH, embeddings)
                 faiss_retriever = db.as_retriever(search_kwargs={"k": 5})
 
@@ -321,13 +331,13 @@ if (st.session_state.val_user and st.session_state.val_vm !=None):
     """
                         response = llm(
                             f""" |tags:
-                            [INST],[/INST] = symbolizes generation Instructions 
+                            [SYS],[/SYS] = symbolizes generation Instructions 
                             [CNTX],[/CNTX] = context for the query
                             [QUER],[/QUER] = user query|
                             '<->' = logical link/seperation among entities|
-                                    [INST]{system_message_inst}[/INST]<->
+                                    [SYS]{system_message_inst}[/SYS]<->
                                     [CNTX]{context}[/CNTX]<->
-                                    [QUER]{user_query}[/QUER]
+                                    [QUER]{user_query}[/QUER],generate a comprehensive structured response
                                     """)
 
                         if user_query is not None:
@@ -422,11 +432,11 @@ if (st.session_state.val_user and st.session_state.val_vm !=None):
                 
                 response = llm(
                             f"""|tags:
-                            [INST],[/INST] = symbolizes generation Instructions 
+                            [SYS],[/SYS] = symbolizes generation Instructions 
                             [QUER],[/QUER] = user query|
                             '<->' = logical link/seperation among entities|
-                            [INST]{system_message_inst}[/INST]<->
-                            [QUER]{user_query}[/QUER]""")
+                            [SYS]{system_message_inst}[/SYS]<->
+                            [QUER]{user_query}[/QUER] , generate a comprehensive structured response""")
 
                 if user_query is not None:
                     # Save user input and LM output to session state
