@@ -53,7 +53,7 @@ def doc_loader(doc_path):
 
 # Get the current system time
 current_time = datetime.now()
-def process_documents_in_batches(doc_path, embeddings, batch_size=400):
+def process_documents_in_batches(doc_path, embeddings, batch_size=500):
     documents = doc_loader(doc_path)
     processed = 0
     db = None
@@ -86,7 +86,7 @@ if 'val_vm' not in st.session_state:
 
 
 # Initialize Streamlit
-st.set_page_config(layout="wide", page_title=":blue[COGNITUT]")
+st.set_page_config(layout="wide", page_title="COGNITUT")
 st.title(":blue[COGNITUT]")
 
 with st.spinner(":red[LOADING THE DATABASE....]"):
@@ -132,7 +132,7 @@ st.markdown(
 container = st.container()
 with container:
     # Using st.form to wrap the form elements
-    with st.expander(':green[**FILL THIS TO USE**]'):
+    with st.expander(':green[**LOGIN FORM : FILL THIS TO USE**]'):
         with st.form("my_form"):
             vm_number = st.text_input("VM Number", placeholder="Enter VM number (e.g., vm13456)")
             name = st.text_input("Name", placeholder="Enter name")
@@ -143,7 +143,7 @@ with container:
                 name_result, name_stripped = validate_name(name)
 
                 if vm_result and name_result:
-                    st.success("Form submitted successfully!")
+                    st.success("**Form submitted successfully!**  :red[*you can minimise the form*]")
 
                     # Assigning validated values to global variables
                     val_user = name_stripped
@@ -186,13 +186,13 @@ if (st.session_state.val_user and st.session_state.val_vm !=None):
 
 
     if doc_mode:
-        compression_mode = st.sidebar.toggle(label="Advanced Context Compression")
+        compression_mode = st.sidebar.toggle(label="Context Compression")
 
         # NOTE: THE KEY OF THE DICTIONARY IS CASE-SENSITIVE
         all_subjects = {
             "CSE": {"Semester 7": ["Cloud Computing","Principles Of Management","Cyber Forensics","Cryptography And Network Security","Blockchain Technology",],
             },
-            "IT": {
+            "IT": {"Semester 7": ["Cloud Computing","Principles Of Management","Cyber Forensics","Cryptography And Network Security","Blockchain Technology",],
                 # 'Semester 5': ['IT Subject1', 'IT Subject2', 'IT Subject3'],
                 # 'Semester 6': ['IT SubjectA', 'IT SubjectB', 'IT SubjectC'],
                 # Add subjects for other semesters as needed
@@ -225,7 +225,7 @@ if (st.session_state.val_user and st.session_state.val_vm !=None):
             doc_path = f"Documents/{department}/{semester}/{subject}"
 
             # Define the path for the FAISS vector store
-            FAISS_DB_PATH = f"vectorStore/{department}/{semester}/{subject}"
+            FAISS_DB_PATH = f"vectorStore/{subject}"
 
             # Check if the directory exists, and create it if it doesn't
             if not os.path.exists(doc_path):
@@ -235,10 +235,10 @@ if (st.session_state.val_user and st.session_state.val_vm !=None):
                 os.makedirs(FAISS_DB_PATH)
 
             # Check if FAISS_DB_PATH is empty
-            # Modify the FAISS database creation part in your main code
             if not os.listdir(FAISS_DB_PATH):
                 if os.listdir(doc_path):
                     with st.spinner("Vector DB is creating..."):
+                        st.success("""THIS PROCESS MAY TAKE SOME TIME PLEASE WAIT ....""")
                         if not os.listdir(doc_path):
                             for file_name in os.listdir(FAISS_DB_PATH):
                                 file_path = os.path.join(FAISS_DB_PATH, file_name)
@@ -253,6 +253,7 @@ if (st.session_state.val_user and st.session_state.val_vm !=None):
                             db = process_documents_in_batches(doc_path, embeddings)
                             st.balloons()
                             st.toast(f"Vector DB created in: {FAISS_DB_PATH[12:]}", icon="✅")
+                            st.rerun()
             else:
                 db = FAISS.load_local(FAISS_DB_PATH, embeddings)
                 faiss_retriever = db.as_retriever(search_kwargs={"k": 5})
@@ -261,6 +262,10 @@ if (st.session_state.val_user and st.session_state.val_vm !=None):
 
                     # Load documents using the cached function
                     documents = doc_loader(doc_path)
+                    if not documents:
+                        new_doc_path = f"Documents/{department}/{semester}/{subject}"
+                        documents=doc_loader(new_doc_path)
+
                     bm25_retriever = BM25Retriever.from_documents(documents)
                     bm25_retriever.k = 3
 
@@ -277,11 +282,13 @@ if (st.session_state.val_user and st.session_state.val_vm !=None):
                             # Compression mode is enabled
                             compressor = LLMChainExtractor.from_llm(compressor_llm)
                         else:
-                            # Compression mode is disabled
-                            compressor = EmbeddingsFilter(embeddings=embeddings, similarity_threshold=0.75)
+                            with st.spinner(f"**:blue[CONTEXT RETRIEVAL : ]** Relavant Information Is Being Extracted From {subject}"):
+                                # Compression mode is disabled
+                                compressor = EmbeddingsFilter(embeddings=embeddings, similarity_threshold=0.75)
 
-                        compression_retriever = ContextualCompressionRetriever(base_compressor=compressor, base_retriever=ensemble_retriever)
-                        compressed_docs = compression_retriever.get_relevant_documents(user_query)
+                        with st.spinner(f":blue[**CONTEXT COMPRESSION :** Reducing Context Size] "):
+                            compression_retriever = ContextualCompressionRetriever(base_compressor=compressor, base_retriever=ensemble_retriever)
+                            compressed_docs = compression_retriever.get_relevant_documents(user_query)
 
                         metadata_info = []
                         for i in range(len(compressed_docs)):
@@ -299,7 +306,7 @@ if (st.session_state.val_user and st.session_state.val_vm !=None):
 
                         llm = chat_model(chat_model_name)
 
-                        context = "\n".join([f"{doc.page_content}\nMetadata: {doc.metadata}\n"for doc in compressed_docs])
+                        context = "\n".join([f"{doc .page_content}\nMetadata: {doc.metadata}\n"for doc in compressed_docs])
                         system_message_inst = f"""### Role: Specialized Academic Expert Bot
     **Description:**
     Specialized Academic Expert dedicated to in-depth knowledge in the {subject} domain, delivering precise and structured information. Committed to addressing user queries with clarity and aligning responses with academic principles.
@@ -337,8 +344,7 @@ if (st.session_state.val_user and st.session_state.val_vm !=None):
                             '<->' = logical link/seperation among entities|
                                     [SYS]{system_message_inst}[/SYS]<->
                                     [CNTX]{context}[/CNTX]<->
-                                    [QUER]{user_query}[/QUER],generate a comprehensive structured response
-                                    """)
+                                    [QUER]{user_query}[/QUER],generate a comprehensive structured response based on context""")
 
                         if user_query is not None:
 
@@ -377,7 +383,8 @@ if (st.session_state.val_user and st.session_state.val_vm !=None):
                             with st.expander("SHOW CONTEXT"):
                                 st.write(context)
         else:
-            st.warning(':red[PLEASE CHOOSE CORRECT OPTIONS FROM THE LEFT SIDEBAR]')
+            st.warning(':red[PLEASE FILL DETAILS IN THE LEFT SIDEBAR]')
+            st.warning('SIDE BAR IS PRESENT ON TOP LEFT SIDE OF PAGE')
 
 
 
@@ -436,7 +443,7 @@ if (st.session_state.val_user and st.session_state.val_vm !=None):
                             [QUER],[/QUER] = user query|
                             '<->' = logical link/seperation among entities|
                             [SYS]{system_message_inst}[/SYS]<->
-                            [QUER]{user_query}[/QUER] , generate a comprehensive structured response""")
+                            [QUER]{user_query}[/QUER] , generate a comprehensive structured response based on context""")
 
                 if user_query is not None:
                     # Save user input and LM output to session state
