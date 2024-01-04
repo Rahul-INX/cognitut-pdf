@@ -1,8 +1,9 @@
 [theme]
-primaryColor="#f46036"
-backgroundColor="#f5f7fa"
-secondaryBackgroundColor="#4ea5ff"
+base="light"
+primaryColor="#a100ff"
+secondaryBackgroundColor="#bcdaff"
 textColor="#000000"
+
 
 [logger]
 level= "error"
