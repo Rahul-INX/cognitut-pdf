@@ -213,7 +213,7 @@ if (st.session_state.val_user and st.session_state.val_vm !=None):
 
     # Sidebar setup
     st.sidebar.title("SETTINGS MENU")
-    doc_mode = st.sidebar.toggle(label="Syllabus Mode", value=False, help='Lets you generate answer from your prescribed textbooks')
+    doc_mode = st.sidebar.toggle(label="**Syllabus Mode**", value=False, help='Lets you generate answer from your prescribed textbooks')
 
     
     if doc_mode:
