@@ -90,7 +90,7 @@ if 'val_vm' not in st.session_state:
 
 # Initialize Streamlit
 st.set_page_config(layout="wide", page_title="VTMT GPT")
-st.title(":blue[ : AI Study Guide]")
+st.title(":blue[ VTMT GPT : AI Study Buddy]")
 
 st.markdown("""
     <script>
