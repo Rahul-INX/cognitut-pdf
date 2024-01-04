@@ -90,7 +90,7 @@ if 'val_vm' not in st.session_state:
 
 # Initialize Streamlit
 st.set_page_config(layout="wide", page_title="COGNITUT")
-st.title(":blue[COGNITUT]")
+st.title(":blue[COGNITUT : AI Study Guide]")
 
 st.markdown("""
     <script>
@@ -155,7 +155,7 @@ st.markdown(
 # Creating a centered container
 container = st.container()
 with container:
-    # Using st.form to wrap the form elements
+    # Using st.form to wrap the form elements:
     with st.expander(':blue[**LOGIN FORM : FILL THIS TO USE**]'):
         with st.form("my_form"):
             vm_number = st.text_input(":blue[VM Number]", placeholder="Enter VM number (e.g., vm13456)",help="This will help us get the analytics needed for improvement")
@@ -212,7 +212,7 @@ if (st.session_state.val_user and st.session_state.val_vm !=None):
             st.markdown(msg["content"])
 
     # Sidebar setup
-    st.sidebar.title("WELCOME TO COGNITUT!")
+    st.sidebar.title("SETTINGS MENU")
     doc_mode = st.sidebar.toggle(label="Syllabus Mode", value=False, help='Lets you generate answer from your prescribed textbooks')
 
     
