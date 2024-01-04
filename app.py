@@ -360,7 +360,7 @@ if (st.session_state.val_user and st.session_state.val_vm !=None):
                             '<->' = logical link/seperation among entities|
                                     [SYS]{system_message_inst}[/SYS]<->
                                     [CNTX]{context}[/CNTX]<->
-                                    [QUER]{user_query}[/QUER],generate a comprehensive structured response based on context, like a human response""")
+                                    [QUER]{user_query}[/QUER],generate a comprehensive structured response based on context""")
 
                         if user_query is not None:
 
@@ -459,7 +459,7 @@ if (st.session_state.val_user and st.session_state.val_vm !=None):
                             [QUER],[/QUER] = user query|
                             '<->' = logical link/seperation among entities|
                             [SYS]{system_message_inst}[/SYS]<->
-                            [QUER]{user_query}[/QUER] , generate a comprehensive structured response based on context ,like a human response""")
+                            [QUER]{user_query}[/QUER] , generate a comprehensive structured response based on context.""")
 
                 if user_query is not None:
                     # Save user input and LM output to session state
