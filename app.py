@@ -200,7 +200,7 @@ if (st.session_state.val_user and st.session_state.val_vm !=None):
         all_subjects = {
             "CSE": {"Semester 7": ["Cloud Computing","Principles Of Management","Cyber Forensics","Cryptography And Network Security","Blockchain Technology",],
             },
-            "IT": {"Semester 7": ["Cloud Computing","Principles Of Management","Cyber Forensics","Cryptography And Network Security","Blockchain Technology",],
+            "IT": {
                 # 'Semester 5': ['IT Subject1', 'IT Subject2', 'IT Subject3'],
                 # 'Semester 6': ['IT SubjectA', 'IT SubjectB', 'IT SubjectC'],
                 # Add subjects for other semesters as needed
