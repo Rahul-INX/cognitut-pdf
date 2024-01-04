@@ -198,18 +198,22 @@ if (st.session_state.val_user and st.session_state.val_vm !=None):
 
         # NOTE: THE KEY OF THE DICTIONARY IS CASE-SENSITIVE
         all_subjects = {
-            "CSE": {"Semester 7": ["Cloud Computing","Principles Of Management","Cyber Forensics","Cryptography And Network Security","Blockchain Technology",],
+            "CSE": {"Semester 7": ["Cloud Computing","Principles Of Management","Cyber Forensics","Cryptography And Network Security","Blockchain Technology"],
             },
             "IT": {
-                # 'Semester 5': ['IT Subject1', 'IT Subject2', 'IT Subject3'],
+                 'Semester 7': ['Mobile Application Development', 'Cryptography And Network Security', 'Renewable Energy Sources'],
                 # 'Semester 6': ['IT SubjectA', 'IT SubjectB', 'IT SubjectC'],
                 # Add subjects for other semesters as needed
             },
-        }
+            "ECE":{"Semester 7":['Wireless Networks','Digital Image Processing','Renewable Energy Sources']},
+        
+        
+        #*******************************
+                        }   
 
         # Department selection
         department = st.sidebar.selectbox(
-            "Choose your department (only CSE support yet)",
+            "Choose your department (only few dept support yet)",
             ("CSE", "IT", "ECE", "MECH", "CSBS", "AI & DS", "EEE", "BME"),
             index=None,
         )
@@ -260,7 +264,7 @@ if (st.session_state.val_user and st.session_state.val_vm !=None):
                             # Create FAISS database in batches with error handling
                             db = process_documents_in_batches(doc_path, embeddings)
                             st.balloons()
-                            st.toast(f"Vector DB created in: {FAISS_DB_PATH[12:]}", icon="✅")
+                            st.toast(f"Vector DB created in: {FAISS_DB_PATH}", icon="✅")
                             st.rerun()
             else:
                 db = FAISS.load_local(FAISS_DB_PATH, embeddings)
@@ -272,7 +276,11 @@ if (st.session_state.val_user and st.session_state.val_vm !=None):
                     documents = doc_loader(doc_path)
                     if not documents:
                         new_doc_path = f"Documents/{department}/{semester}/{subject}"
+                        if (subject== 'Cryptography And Network Security'):
+                            new_doc_path = 'Documents\CSE\Semester 7\Cryptography And Network Security'
                         documents=doc_loader(new_doc_path)
+                        
+
 
                     bm25_retriever = BM25Retriever.from_documents(documents)
                     bm25_retriever.k = 3
@@ -352,7 +360,7 @@ if (st.session_state.val_user and st.session_state.val_vm !=None):
                             '<->' = logical link/seperation among entities|
                                     [SYS]{system_message_inst}[/SYS]<->
                                     [CNTX]{context}[/CNTX]<->
-                                    [QUER]{user_query}[/QUER],generate a comprehensive structured response based on context""")
+                                    [QUER]{user_query}[/QUER],generate a comprehensive structured response based on context, like a human response""")
 
                         if user_query is not None:
 
@@ -451,7 +459,7 @@ if (st.session_state.val_user and st.session_state.val_vm !=None):
                             [QUER],[/QUER] = user query|
                             '<->' = logical link/seperation among entities|
                             [SYS]{system_message_inst}[/SYS]<->
-                            [QUER]{user_query}[/QUER] , generate a comprehensive structured response based on context""")
+                            [QUER]{user_query}[/QUER] , generate a comprehensive structured response based on context ,like a human response""")
 
                 if user_query is not None:
                     # Save user input and LM output to session state
