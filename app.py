@@ -374,16 +374,17 @@ if (st.session_state.val_user and st.session_state.val_vm !=None):
     ##** Necessity**:
     - give a comprehensive, structured answer to the Query
     - In the presence of explicit language, comments, vulgar slang, or harmful information, respond with 'I Am a responsible AI. Hence, cannot help you with that' and conclude the response.
-    """              with st.spinner(":green[**Generating Response....**]"):
-                         response = llm(
-                             f""" |tags:
-                             [SYS],[/SYS] = symbolizes generation Instructions 
-                             [CNTX],[/CNTX] = context for the query
-                             [QUER],[/QUER] = user query|
-                             '<->' = logical link/seperation among entities|
-                                     [SYS]{system_message_inst}[/SYS]<->
-                                     [CNTX]{context}[/CNTX]<->
-                                     [QUER]{user_query}[/QUER],generate a comprehensive structured response based on 'context' and 'query' """)
+    """
+                        with st.spinner(":green[**Generating Response....**]"):
+                            response = llm(
+                                f""" |tags:
+                                [SYS],[/SYS] = symbolizes generation Instructions 
+                                [CNTX],[/CNTX] = context for the query
+                                [QUER],[/QUER] = user query|
+                                '<->' = logical link/seperation among entities|
+                                        [SYS]{system_message_inst}[/SYS]<->
+                                        [CNTX]{context}[/CNTX]<->
+                                        [QUER]{user_query}[/QUER],generate a comprehensive structured response based on context and query """)
 
                         if user_query is not None:
 
@@ -475,14 +476,15 @@ if (st.session_state.val_user and st.session_state.val_vm !=None):
     - give a fulfilling , comprehensive, structure answer to the query
     - In the presence of explicit language, comments, vulgar slang, or harmful information, respond with 'I Am a responsible AI. Hence, cannot help you with that' and conclude the response.
     """
+                
                 with st.spinner(":green[**Generating Response....**]"):
-                 response = llm(
-                             f"""|tags:
-                             [SYS],[/SYS] = symbolizes generation Instructions 
-                             [QUER],[/QUER] = user query|
-                             '<->' = logical link/seperation among entities|
-                             [SYS]{system_message_inst}[/SYS]<->
-                             [QUER]{user_query}[/QUER] , note# generate a comprehensive structured response based on 'query' """)
+                    response = llm(
+                            f"""|tags:
+                            [SYS],[/SYS] = symbolizes generation Instructions 
+                            [QUER],[/QUER] = user query|
+                            '<->' = logical link/seperation among entities|
+                            [SYS]{system_message_inst}[/SYS]<->
+                            [QUER]{user_query}[/QUER] , note# generate a comprehensive structured response based on user_query """)
 
                 if user_query is not None:
                     # Save user input and LM output to session state
@@ -524,7 +526,6 @@ if (st.session_state.val_user and st.session_state.val_vm !=None):
                     with st.chat_message("ai", avatar="👨‍🏫"):
                         st.markdown(response)
                     st.rerun()
-
 
 
 
