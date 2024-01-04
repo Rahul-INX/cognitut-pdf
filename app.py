@@ -374,7 +374,7 @@ if (st.session_state.val_user and st.session_state.val_vm !=None):
     ##** Necessity**:
     - give a comprehensive, structured answer to the Query
     - In the presence of explicit language, comments, vulgar slang, or harmful information, respond with 'I Am a responsible AI. Hence, cannot help you with that' and conclude the response.
-    """                 with st.spinner(":green[**Generating Response....**]"):
+    """              with st.spinner(":green[**Generating Response....**]"):
                          response = llm(
                              f""" |tags:
                              [SYS],[/SYS] = symbolizes generation Instructions 
