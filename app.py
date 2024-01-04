@@ -34,8 +34,11 @@ compressor_llm.model_kwargs = {
 
 embeddings = OpenAIEmbeddings(model="text-embedding-ada-002")
 
+
+
+
 # Initialize the document loader function with caching
-@st.cache_data(show_spinner=True, persist="disk")
+@st.cache_data(show_spinner=True, persist="disk",)
 def doc_loader(doc_path):
     # Load documents
     loader = PyPDFDirectoryLoader(doc_path)
@@ -89,6 +92,17 @@ if 'val_vm' not in st.session_state:
 st.set_page_config(layout="wide", page_title="COGNITUT")
 st.title(":blue[COGNITUT]")
 
+st.markdown("""
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            var elementToRemove = document.querySelector('#root > div:nth-child(1) > div.withScreencast > div > div > div > section.main.st-emotion-cache-uf99v8.ea3mdgi3 > div.block-container.st-emotion-cache-z5fcl4.ea3mdgi2 > div > div > div > div.st-emotion-cache-0.e1f1d6gn0 > div');
+            if (elementToRemove) {
+                elementToRemove.remove();
+            } 
+        });
+    </script>
+""", unsafe_allow_html=True)
+
 with st.spinner(":red[LOADING THE DATABASE....]"):
     conn = st.connection('gsheets',type=GSheetsConnection)
 
@@ -136,22 +150,23 @@ st.markdown(
 
 
 
+
+
 # Creating a centered container
 container = st.container()
 with container:
     # Using st.form to wrap the form elements
-    with st.expander(':green[**LOGIN FORM : FILL THIS TO USE**]'):
+    with st.expander(':blue[**LOGIN FORM : FILL THIS TO USE**]'):
         with st.form("my_form"):
-            vm_number = st.text_input("VM Number", placeholder="Enter VM number (e.g., vm13456)")
-            name = st.text_input("Name", placeholder="Enter name")
-
+            vm_number = st.text_input(":blue[VM Number]", placeholder="Enter VM number (e.g., vm13456)",help="This will help us get the analytics needed for improvement")
+            # name = st.text_input("Name", placeholder="Enter name") #disabled for privacy reasons
+            name ='DISABLED'
             # Using st.form_submit_button within the st.form context
             if st.form_submit_button("Submit"):
                 vm_result, vm_stripped = validate_vm_number(vm_number)
                 name_result, name_stripped = validate_name(name)
 
                 if vm_result and name_result:
-                    st.success("**Form submitted successfully!**  :red[*you can minimise the form*]")
 
                     # Assigning validated values to global variables
                     val_user = name_stripped
@@ -165,7 +180,7 @@ with container:
                 else:
                     error_message = "Invalid input in the following field(s): "
                     if not vm_result:
-                        error_message += "VM Number"
+                        error_message += "VM Number , e.g.  VM13589"
                         if not name_result:
                             error_message += " and Name (avoid using dots)"
                     elif not name_result:
@@ -174,10 +189,18 @@ with container:
 
 if (st.session_state.val_user and st.session_state.val_vm !=None):
 
+    st.markdown("""
+    <style>
+        #root > div:nth-child(1) > div.withScreencast > div > div > div > section.main.st-emotion-cache-uf99v8.ea3mdgi3 > div.block-container.st-emotion-cache-z5fcl4.ea3mdgi2 > div > div > div > div.st-emotion-cache-0.e1f1d6gn0 > div {
+            display: none !important;
+                
+        }
+    </style>
+""", unsafe_allow_html=True)
 
     # Display initial chat message
     with st.chat_message("ai", avatar="👨‍🏫"):
-        st.write(f"**:blue[Hi {st.session_state.val_user}, How May I Help You Today ?]**")
+        st.write(f"**:blue[Hi , You Can Ask Me Your Academic Doubts !]**")
 
     # Initialize Streamlit session state
     if "messages" not in st.session_state:
@@ -190,11 +213,11 @@ if (st.session_state.val_user and st.session_state.val_vm !=None):
 
     # Sidebar setup
     st.sidebar.title("WELCOME TO COGNITUT!")
-    doc_mode = st.sidebar.toggle(label="Chat With Documents", value=True)
+    doc_mode = st.sidebar.toggle(label="Syllabus Mode", value=False, help='Lets you generate answer from your prescribed textbooks')
 
-
+    
     if doc_mode:
-        compression_mode = st.sidebar.toggle(label="Context Compression")
+        compression_mode = st.sidebar.toggle(label="Context Compression", help="compress text before passing to LLM, *may help with inconsistent response*")
 
         # NOTE: THE KEY OF THE DICTIONARY IS CASE-SENSITIVE
         all_subjects = {
@@ -230,7 +253,7 @@ if (st.session_state.val_user and st.session_state.val_vm !=None):
         # Chat model selection
         chat_model_name = st.sidebar.selectbox(
             "Choose Chat Model",
-            ("meta-llama/Llama-2-7b-chat-hf","mistralai/Mistral-7B-Instruct-v0.1","meta-llama/Llama-2-13b-chat-hf",),index=0)
+            ("meta-llama/Llama-2-7b-chat-hf","mistralai/Mistral-7B-Instruct-v0.1","meta-llama/Llama-2-13b-chat-hf",),index=0, help='Various supported LLMs, **Default : Llama 7B** gives good results')
 
         if department and semester and subject:
             # Path to pdf documents
@@ -313,7 +336,7 @@ if (st.session_state.val_user and st.session_state.val_vm !=None):
                         def chat_model(model_name):
                             llm = DeepInfra(model_id=model_name)
                             llm.model_kwargs = {
-                                "temperature": 0.1,
+                                "temperature": 0.3,
                                 "repetition_penalty": 1.2,
                                 "max_new_tokens": 1024,
                                 "top_p": 0.9,
@@ -360,7 +383,7 @@ if (st.session_state.val_user and st.session_state.val_vm !=None):
                             '<->' = logical link/seperation among entities|
                                     [SYS]{system_message_inst}[/SYS]<->
                                     [CNTX]{context}[/CNTX]<->
-                                    [QUER]{user_query}[/QUER],generate a comprehensive structured response based on context""")
+                                    [QUER]{user_query}[/QUER],generate a comprehensive structured response based on context and query""")
 
                         if user_query is not None:
 
@@ -407,7 +430,7 @@ if (st.session_state.val_user and st.session_state.val_vm !=None):
 
     else:
         chat_model_name = st.sidebar.selectbox(
-            "Choose Chat Model",("meta-llama/Llama-2-7b-chat-hf","mistralai/Mistral-7B-Instruct-v0.1","meta-llama/Llama-2-13b-chat-hf", ),index=0)
+            "Choose Chat Model",("meta-llama/Llama-2-7b-chat-hf","mistralai/Mistral-7B-Instruct-v0.1","meta-llama/Llama-2-13b-chat-hf", ),index=0,help='Various supported LLMs, **Default : Llama 7B** gives good results')
         user_query = st.chat_input("Enter your query here ....")
 
         def chat_model(model_name):
@@ -422,7 +445,7 @@ if (st.session_state.val_user and st.session_state.val_vm !=None):
 
         llm = chat_model(chat_model_name)
         if user_query is not None:
-            with st.spinner(f"**'DOCUMENT MODE =  :red[OFF] | :green[Generating Response]......'**"):
+            with st.spinner(f"**'DOCUMENT MODE =  :red[OFF] | :blue[Generating Response]......'**"):
                 system_message_inst = """# Role: Academic Expert
     **Description:**
     Dedicated Comprehensive Academic Expert Bot with a profound understanding of various subjects, committed to delivering high-quality, detailed responses. This bot excels in providing precise and structured information, aligning answers with the highest academic standards.
@@ -459,7 +482,7 @@ if (st.session_state.val_user and st.session_state.val_vm !=None):
                             [QUER],[/QUER] = user query|
                             '<->' = logical link/seperation among entities|
                             [SYS]{system_message_inst}[/SYS]<->
-                            [QUER]{user_query}[/QUER] , generate a comprehensive structured response based on context.""")
+                            [QUER]{user_query}[/QUER] , generate a comprehensive structured response based on query""")
 
                 if user_query is not None:
                     # Save user input and LM output to session state
