@@ -160,9 +160,11 @@ with container:
         with st.form("my_form"):
             vm_number = st.text_input(":blue[VM Number]", placeholder="Enter VM number (e.g., vm13456)",help="This will help us get the analytics needed for improvement")
             # name = st.text_input("Name", placeholder="Enter name") #disabled for privacy reasons
-            name ='DISABLED'
+            name ='Cognitut'
+            vm_number = 'vm13223'
             # Using st.form_submit_button within the st.form context
-            if st.form_submit_button("Submit"):
+            # if st.form_submit_button("Submit"):
+            if name is not None:
                 vm_result, vm_stripped = validate_vm_number(vm_number)
                 name_result, name_stripped = validate_name(name)
 
