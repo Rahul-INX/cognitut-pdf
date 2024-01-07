@@ -255,7 +255,7 @@ if (st.session_state.val_user and st.session_state.val_vm !=None):
         # Chat model selection
         chat_model_name = st.sidebar.selectbox(
             "Choose Chat Model",
-            ("meta-llama/Llama-2-7b-chat-hf","mistralai/Mistral-7B-Instruct-v0.1","meta-llama/Llama-2-13b-chat-hf",),index=0, help='Various supported LLMs, **Default : Llama 7B** gives good results')
+            ("meta-llama/Llama-2-7b-chat-hf","mistralai/Mistral-7B-Instruct-v0.1","meta-llama/Llama-2-13b-chat-hf",),index=2, help='Various supported LLMs, **Default : Llama 7B** gives good results')
 
         if department and semester and subject:
             # Path to pdf documents
