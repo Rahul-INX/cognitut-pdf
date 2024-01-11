@@ -309,7 +309,7 @@ if (st.session_state.val_user and st.session_state.val_vm !=None):
                     bm25_retriever.k = 3
 
                     # initialize the ensemble retriever
-                    ensemble_retriever = EnsembleRetriever(retrievers=[bm25_retriever, faiss_retriever], weights=[0.3 0.7])
+                    ensemble_retriever = EnsembleRetriever(retrievers=[bm25_retriever, faiss_retriever], weights=[0.3, 0.7])
 
                     user_query = st.chat_input("Enter your query here ....")
 
