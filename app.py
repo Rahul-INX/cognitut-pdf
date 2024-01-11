@@ -24,10 +24,10 @@ DEEPINFRA_API_TOKEN=st.secrets.my_keys.DEEPINFRA_API_TOKEN
 os.environ['DEEPINFRA_API_TOKEN']=DEEPINFRA_API_TOKEN
 os.environ['OPENAI_API_KEY'] =OPENAI_API_KEY
 # Accessing the DEEPINFRA_API_TOKEN variable
-compressor_llm = DeepInfra(model_id="mistralai/Mistral-7B-Instruct-v0.1")
+compressor_llm = DeepInfra(model_id="meta-llama/Llama-2-7b-chat-hf")
 compressor_llm.model_kwargs = {
     "temperature": 0.4,
-    "repetition_penalty": 1,
+    "repetition_penalty": 1.1,
     "max_new_tokens": 1000,
     "top_p": 0.90,
 }
