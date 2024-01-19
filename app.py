@@ -291,7 +291,7 @@ if (st.session_state.val_user and st.session_state.val_vm !=None):
                             st.rerun()
             else:
                 db = FAISS.load_local(FAISS_DB_PATH, embeddings)
-                faiss_retriever = db.as_retriever(search_kwargs={"k": 4})
+                faiss_retriever = db.as_retriever(search_kwargs={"k": 3})
 
                 with st.spinner(f"**Processing ':orange[{doc_path.split('/')[-1]}]'........**"):
 
@@ -306,7 +306,7 @@ if (st.session_state.val_user and st.session_state.val_vm !=None):
 
 
                     bm25_retriever = BM25Retriever.from_documents(documents)
-                    bm25_retriever.k = 3
+                    bm25_retriever.k = 2
 
                     # initialize the ensemble retriever
                     ensemble_retriever = EnsembleRetriever(retrievers=[bm25_retriever, faiss_retriever], weights=[0.3, 0.7])
