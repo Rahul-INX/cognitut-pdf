@@ -24,10 +24,10 @@ DEEPINFRA_API_TOKEN=st.secrets.my_keys.DEEPINFRA_API_TOKEN
 os.environ['DEEPINFRA_API_TOKEN']=DEEPINFRA_API_TOKEN
 os.environ['OPENAI_API_KEY'] =OPENAI_API_KEY
 # Accessing the DEEPINFRA_API_TOKEN variable
-compressor_llm = DeepInfra(model_id="mistralai/Mistral-7B-Instruct-v0.1")
+compressor_llm = DeepInfra(model_id="meta-llama/Llama-2-7b-chat-hf")
 compressor_llm.model_kwargs = {
     "temperature": 0.4,
-    "repetition_penalty": 1,
+    "repetition_penalty": 1.1,
     "max_new_tokens": 1000,
     "top_p": 0.90,
 }
@@ -83,14 +83,14 @@ def process_documents_in_batches(doc_path, embeddings, batch_size=500):
 
 # Initialize Streamlit's session state
 if 'val_user' not in st.session_state:
-    st.session_state.val_user ="COGNITUT"
+    st.session_state.val_user =None
 if 'val_vm' not in st.session_state:
     st.session_state.val_vm = None
 
 
 # Initialize Streamlit
-st.set_page_config(layout="wide", page_title="COGNITUT")
-st.title(":blue[COGNITUT : AI Study Guide]")
+st.set_page_config(layout="wide", page_title="Cognitut")
+st.title(":blue[ COGNITUT : AI Study Buddy]")
 
 st.markdown("""
     <script>
@@ -152,42 +152,11 @@ st.markdown(
 
 
 
-# Creating a centered container
-container = st.container()
-with container:
-    # Using st.form to wrap the form elements:
-    with st.expander(':blue[**LOGIN FORM : FILL THIS TO USE**]'):
-        with st.form("my_form"):
-            vm_number = st.text_input(":blue[VM Number]", placeholder="Enter VM number (e.g., vm13456)",help="This will help us get the analytics needed for improvement")
-            # name = st.text_input("Name", placeholder="Enter name") #disabled for privacy reasons
-            name ='Cognitut'
-            vm_number = 'vm13223'
-            # Using st.form_submit_button within the st.form context
-            # if st.form_submit_button("Submit"):
-            if name is not None:
-                vm_result, vm_stripped = validate_vm_number(vm_number)
-                name_result, name_stripped = validate_name(name)
 
-                if vm_result and name_result:
+# Store in Streamlit's session state
+st.session_state.val_user = "COGNITUT"
+st.session_state.val_vm = "None"
 
-                    # Assigning validated values to global variables
-                    val_user = name_stripped
-                    val_vm = vm_stripped
-
-                    # Store in Streamlit's session state
-                    st.session_state.val_user = val_user
-                    st.session_state.val_vm = val_vm
-
-                    # Process the submitted data here or store it in variables as needed
-                else:
-                    error_message = "Invalid input in the following field(s): "
-                    if not vm_result:
-                        error_message += "VM Number , e.g.  VM13589"
-                        if not name_result:
-                            error_message += " and Name (avoid using dots)"
-                    elif not name_result:
-                        error_message += "Name (avoid using dots)"
-                    st.error(error_message)
 
 if (st.session_state.val_user and st.session_state.val_vm !=None):
 
@@ -215,7 +184,7 @@ if (st.session_state.val_user and st.session_state.val_vm !=None):
 
     # Sidebar setup
     st.sidebar.title("SETTINGS MENU")
-    doc_mode = st.sidebar.toggle(label="Syllabus Mode", value=False, help='Lets you generate answer from your prescribed textbooks')
+    doc_mode = st.sidebar.toggle(label="**Syllabus Mode**", value=False, help='Lets you generate answer from your prescribed textbooks')
 
     
     if doc_mode:
@@ -293,7 +262,7 @@ if (st.session_state.val_user and st.session_state.val_vm !=None):
                             st.rerun()
             else:
                 db = FAISS.load_local(FAISS_DB_PATH, embeddings)
-                faiss_retriever = db.as_retriever(search_kwargs={"k": 5})
+                faiss_retriever = db.as_retriever(search_kwargs={"k": 3})
 
                 with st.spinner(f"**Processing ':orange[{doc_path.split('/')[-1]}]'........**"):
 
@@ -308,10 +277,10 @@ if (st.session_state.val_user and st.session_state.val_vm !=None):
 
 
                     bm25_retriever = BM25Retriever.from_documents(documents)
-                    bm25_retriever.k = 3
+                    bm25_retriever.k = 2
 
                     # initialize the ensemble retriever
-                    ensemble_retriever = EnsembleRetriever(retrievers=[bm25_retriever, faiss_retriever], weights=[0.2, 0.8])
+                    ensemble_retriever = EnsembleRetriever(retrievers=[bm25_retriever, faiss_retriever], weights=[0.3, 0.7])
 
                     user_query = st.chat_input("Enter your query here ....")
 
@@ -377,15 +346,16 @@ if (st.session_state.val_user and st.session_state.val_vm !=None):
     - give a comprehensive, structured answer to the Query
     - In the presence of explicit language, comments, vulgar slang, or harmful information, respond with 'I Am a responsible AI. Hence, cannot help you with that' and conclude the response.
     """
-                        response = llm(
-                            f""" |tags:
-                            [SYS],[/SYS] = symbolizes generation Instructions 
-                            [CNTX],[/CNTX] = context for the query
-                            [QUER],[/QUER] = user query|
-                            '<->' = logical link/seperation among entities|
-                                    [SYS]{system_message_inst}[/SYS]<->
-                                    [CNTX]{context}[/CNTX]<->
-                                    [QUER]{user_query}[/QUER],generate a comprehensive structured response based on context and query""")
+                        with st.spinner(":green[**Generating Response....**]"):
+                            response = llm(
+                                f""" |tags:
+                                [SYS],[/SYS] = symbolizes generation Instructions 
+                                [CNTX],[/CNTX] = context for the query
+                                [QUER],[/QUER] = user query|
+                                '<->' = logical link/seperation among entities|
+                                        [SYS]{system_message_inst}[/SYS]<->
+                                        [CNTX]{context}[/CNTX]<->
+                                        [QUER]{user_query}[/QUER],generate a comprehensive structured response based on context and query """)
 
                         if user_query is not None:
 
@@ -478,13 +448,14 @@ if (st.session_state.val_user and st.session_state.val_vm !=None):
     - In the presence of explicit language, comments, vulgar slang, or harmful information, respond with 'I Am a responsible AI. Hence, cannot help you with that' and conclude the response.
     """
                 
-                response = llm(
+                with st.spinner(":green[**Generating Response....**]"):
+                    response = llm(
                             f"""|tags:
                             [SYS],[/SYS] = symbolizes generation Instructions 
                             [QUER],[/QUER] = user query|
                             '<->' = logical link/seperation among entities|
                             [SYS]{system_message_inst}[/SYS]<->
-                            [QUER]{user_query}[/QUER] , generate a comprehensive structured response based on query""")
+                            [QUER]{user_query}[/QUER] , note# generate a comprehensive structured response based on user_query """)
 
                 if user_query is not None:
                     # Save user input and LM output to session state
@@ -526,15 +497,3 @@ if (st.session_state.val_user and st.session_state.val_vm !=None):
                     with st.chat_message("ai", avatar="👨‍🏫"):
                         st.markdown(response)
                     st.rerun()
-
-
-
-
-
-
-
-
-
-
-
-
