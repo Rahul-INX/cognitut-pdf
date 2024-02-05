@@ -83,7 +83,7 @@ def process_documents_in_batches(doc_path, embeddings, batch_size=500):
 
 # Initialize Streamlit's session state
 if 'val_user' not in st.session_state:
-    st.session_state.val_user =None
+    st.session_state.val_user ="COGNITUT"
 if 'val_vm' not in st.session_state:
     st.session_state.val_vm = None
 
