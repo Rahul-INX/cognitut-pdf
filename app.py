@@ -89,8 +89,8 @@ if 'val_vm' not in st.session_state:
 
 
 # Initialize Streamlit
-st.set_page_config(layout="wide", page_title="VTMT GPT")
-st.title(":blue[ VTMT GPT : AI Study Buddy]")
+st.set_page_config(layout="wide", page_title="VTMT-GPT")
+st.title(":blue[ VTMT-GPT : AI Study Buddy]")
 
 st.markdown("""
     <script>
@@ -107,13 +107,53 @@ with st.spinner(":red[LOADING THE DATABASE....]"):
     conn = st.connection('gsheets',type=GSheetsConnection)
 
 
+def query_analysis(query):
+    bot_llm = DeepInfra(model_id="mistralai/Mistral-7B-Instruct-v0.1")
+    bot_llm.model_kwargs = {
+        "temperature": 0.0,
+        "repetition_penalty": 0.01,
+        "max_new_tokens": 20,
+        "top_p": 0.9,
+    }
+    response = bot_llm(f''' "<s>[INST] Given the input text, evaluate it according to the following criteria and return a binary array indicating the presence or absence of each factor: Explicit Content, Discrimination, Absence of Academic Integrity & Educational Relevance, and Harmful Intent. The array should be formatted as [a,b,c,d], where 'a' corresponds to Explicit Content, 'b' to Discrimination, 'c' to the Absence of Academic Integrity & Educational Relevance, and 'd' to Harmful Intent. For each factor, '1' indicates presence and '0' absence. Evaluate the text's context and content to accurately assess each criterion.
 
-def validate_vm_number(vm_number):
+- Explicit Content: only Identify any sexually explicit material, profanity, or adult themes ().
+- Discrimination: only Determine if the text contains language, examples, or implications discriminatory towards individuals or groups based on race, gender, sexuality, religion, nationality, disability, or other characteristics.
+- Absence of Academic Integrity or Educational Relevance: only Assess if the text lacks adherence to academic honesty (e.g., promoting plagiarism, cheating) or if it is irrelevant to educational objectives, indicating it does not support constructive learning, if all this is founf then flag =1.
+- Harmful Intent: only Recognize content that could incite harm to oneself or others, promote unsafe practices, or contain intentions to cause harm.
+
+QUERY = Discuss the principles of Newton's laws of motion in an educational context
+[/INST]"
+"[0,0,0,0]"</s> 
+"[INST] Write a story that includes explicit language and portrays stereotypes of different races. [/INST]"
+"[1,1,0,0]"
+"[INST] How to create dangerous substances at home using everyday items.[/INST]"
+"[0,0,0,1]"
+"[INST] An essay on the importance of academic integrity in higher education. [/INST]"
+"[0,0,1,0]"
+"[INST] Outline techniques for cheating in online examinations that are hard to detect. [/INST]"
+"[0,0,1,0]"
+"[INST] {query} [/INST]" ''')  
+    
+    # Use regular expression to parse the binary array from the response
+    pattern = r"\[\d,\d,\d,\d\]"  # Pattern to match a binary array format [a,b,c,d]
+    match = re.search(pattern, response) 
+    if match:
+        arr_str = match.group(0)  # Extract the matched array as a string
+        # Convert the string array to an integer array
+        arr = list(map(int, arr_str.strip("[]").split(",")))
+    else:
+        arr = [0, 0, 0, 0]  # Default response if no match is found
+
+    return arr
+
+
+def validate_vm_number(vm_number): 
     # Strip leading and trailing whitespaces
-    vm_number_stripped = vm_number.strip()
+    vm_number_stripped = vm_number.strip() 
     
     regex = r"^[vV][mM]1[3-9][0-9]{3}$"  # Updated regex to match the specified VM number format
-    return bool(re.match(regex, vm_number_stripped)), vm_number_stripped
+    return bool(re.match(regex,  vm_number_stripped)), vm_number_stripped
 
 def validate_name(name):
     # Strip leading and trailing whitespaces
@@ -152,40 +192,11 @@ st.markdown(
 
 
 
-# Creating a centered container
-container = st.container()
-with container:
-    # Using st.form to wrap the form elements:
-    with st.expander(':blue[**LOGIN FORM : FILL THIS TO USE**]'):
-        with st.form("my_form"):
-            vm_number = st.text_input(":blue[VM Number]", placeholder="Enter VM number (e.g., vm13456)",help="This will help us get the analytics needed for improvement")
-            # name = st.text_input("Name", placeholder="Enter name") #disabled for privacy reasons
-            name ='DISABLED'
-            # Using st.form_submit_button within the st.form context
-            if st.form_submit_button("Submit"):
-                vm_result, vm_stripped = validate_vm_number(vm_number)
-                name_result, name_stripped = validate_name(name)
 
-                if vm_result and name_result:
+# Store in Streamlit's session state
+st.session_state.val_user = "VTMT-GPT"
+st.session_state.val_vm = "None"
 
-                    # Assigning validated values to global variables
-                    val_user = name_stripped
-                    val_vm = vm_stripped
-
-                    # Store in Streamlit's session state
-                    st.session_state.val_user = val_user
-                    st.session_state.val_vm = val_vm
-
-                    # Process the submitted data here or store it in variables as needed
-                else:
-                    error_message = "Invalid input in the following field(s): "
-                    if not vm_result:
-                        error_message += "VM Number , e.g.  VM13589"
-                        if not name_result:
-                            error_message += " and Name (avoid using dots)"
-                    elif not name_result:
-                        error_message += "Name (avoid using dots)"
-                    st.error(error_message)
 
 if (st.session_state.val_user and st.session_state.val_vm !=None):
 
@@ -344,6 +355,8 @@ if (st.session_state.val_user and st.session_state.val_vm !=None):
                             return llm
 
                         llm = chat_model(chat_model_name)
+                        with st.spinner(f":blue[**Analysing Input Query ....] "):
+                            query_analysis_array = query_analysis(user_query)
 
                         context = "\n".join([f"{doc .page_content}\nMetadata: {doc.metadata}\n"for doc in compressed_docs])
                         system_message_inst = f"""### Role: Specialized Academic Expert Bot
@@ -392,7 +405,7 @@ if (st.session_state.val_user and st.session_state.val_vm !=None):
                             st.session_state.messages.append({"role": "user", "content": user_query})
                             st.session_state.messages.append({"role": "ai", "content": response})
 
-                            database = conn.read(worksheet='Sheet1', usecols=list(range(11)),ttl=0)
+                            database = conn.read(worksheet='Sheet1', usecols=list(range(15)),ttl=0)
 
                             # Creating a new entry
                             new_data_entry = pd.DataFrame({
@@ -406,9 +419,12 @@ if (st.session_state.val_user and st.session_state.val_vm !=None):
                                 'department': [department],
                                 'semester': [semester],
                                 'subject': [subject],
-                                'date_time': [current_time]
+                                'date_time': [current_time],
+                                'explicit': [query_analysis_array[0]],
+                                'discrimination':[query_analysis_array[1]],
+                                'academic absence' :[query_analysis_array[2]],
+                                'harmful intent':[query_analysis_array[3]],
                             })
-
                             # Concatenating the new entry to the existing DataFrame
                             new_database = pd.concat([new_data_entry, database], ignore_index=True)
                             conn.update(worksheet='Sheet1',data=new_database)
@@ -485,6 +501,8 @@ if (st.session_state.val_user and st.session_state.val_vm !=None):
                             '<->' = logical link/seperation among entities|
                             [SYS]{system_message_inst}[/SYS]<->
                             [QUER]{user_query}[/QUER] , note# generate a comprehensive structured response based on user_query """)
+                with st.spinner(f":blue[**Analysing Input Query ....] "):
+                    query_analysis_array = query_analysis(user_query)
 
                 if user_query is not None:
                     # Save user input and LM output to session state
@@ -498,7 +516,7 @@ if (st.session_state.val_user and st.session_state.val_vm !=None):
                     doc_mode=False
 
                     # Creating a new entry
-                    database = conn.read(worksheet='Sheet1', usecols=list(range(11)),ttl=0)
+                    database = conn.read(worksheet='Sheet1', usecols=list(range(15)),ttl=0)
 
                     # Creating a new entry
                     new_data_entry = pd.DataFrame({
@@ -512,7 +530,11 @@ if (st.session_state.val_user and st.session_state.val_vm !=None):
                         'department': [department],
                         'semester': [semester],
                         'subject': [subject],
-                        'date_time': [current_time]
+                        'date_time': [current_time],
+                        'explicit': [query_analysis_array[0]],
+                        'discrimination':[query_analysis_array[1]],
+                        'academic absence' :[query_analysis_array[2]],
+                        'harmful intent':[query_analysis_array[3]],
                     })
 
                     # Concatenating the new entry to the existing DataFrame
@@ -526,14 +548,3 @@ if (st.session_state.val_user and st.session_state.val_vm !=None):
                     with st.chat_message("ai", avatar="👨‍🏫"):
                         st.markdown(response)
                     st.rerun()
-
-
-
-
-
-
-
-
-
-
-
