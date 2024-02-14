@@ -386,8 +386,8 @@ if (st.session_state.val_user and st.session_state.val_vm !=None):
     - Do not hallucinate on information; stay within the confines of the provided context.
     ##** Necessity**:
     - give a comprehensive, structured answer to the Query
-    - answer must be based around the context(assuming context to be true), else generate answer but on top write "Not Enough Context Was Found!"
-    - In the presence of explicit language, comments, vulgar slang, or harmful information, respond with 'I Am a responsible AI. Hence, cannot help you with that' and conclude the response.
+    - response must be based only on the the context '[CNTX]'(assuming context to be true), else generate answer but on top write "Not Enough Context Was Found!"
+    - In the presence of explicit language, comments, vulgar slang, or harmful information, respond with 'I Am a responsible AI. Hence, cannot help you with that and conclude the response.
     """
                         with st.spinner(":green[**Generating Response....**]"):
                             response = llm(
