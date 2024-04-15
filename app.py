@@ -108,7 +108,7 @@ with st.spinner(":red[LOADING THE DATABASE....]"):
 
 
 def query_analysis(query):
-    bot_llm = DeepInfra(model_id="mistralai/Mistral-7B-Instruct-v0.1")
+    bot_llm = DeepInfra(model_id="mistralai/Mistral-7B-Instruct-v0.2")
     bot_llm.model_kwargs = {
         "temperature": 0.0,
         "repetition_penalty": 0.01,
@@ -146,6 +146,64 @@ QUERY = Discuss the principles of Newton's laws of motion in an educational cont
         arr = [0, 0, 0, 0]  # Default response if no match is found
 
     return arr
+
+
+
+
+
+
+
+
+
+def bloom_analysis(query):
+    bot_llm = DeepInfra(model_id="mistralai/Mistral-7B-Instruct-v0.2")
+    bot_llm.model_kwargs = {
+        "temperature": 0.0,
+        "repetition_penalty": 0.01,
+        "max_new_tokens": 20,
+        "top_p": 0.9,
+    }
+    response = bot_llm(f''' "<s>[INST] Given the input text, evaluate it according to the following criteria and return the top Bloom's taxonomy classification: Remember (K1), Understand (K2), Apply (K3), Analyze (K4), Evaluate (K5), Create (K6). The classification should be returned as a string, e.g., "K1". Evaluate the text's context and content to accurately assess the classification.
+
+- Remember (K1): Recognize and recall facts, terms, concepts, and answers.
+- Understand (K2): Demonstrate understanding of facts and ideas by organizing, comparing, translating, interpreting, giving descriptions, and stating the main ideas.
+- Apply (K3): Use a concept in a new situation or unprompted use of an abstraction. Applies what was learned in the classroom into novel situations.
+- Analyze (K4): Separates material or concepts into component parts so that its organizational structure may be understood. Distinguishes between facts and inferences.
+- Evaluate (K5): Make judgments about the value of ideas or materials.
+- Create (K6): Builds a structure or pattern from diverse elements. Put parts together to form a whole, with emphasis on creating a new meaning or structure.
+
+QUERY = Discuss the principles of Newton's laws of motion in an educational context
+[/INST]"
+"K2"</s> 
+"[INST] Explain the water cycle in detail.[/INST]"
+"K2"
+"[INST] Solve quadratic equations using the quadratic formula.[/INST]"
+"K2"
+"[INST] Compare and contrast photosynthesis and respiration.[/INST]"
+"K4"
+"[INST] Design a simple machine to lift a load. [/INST]"
+"K3"
+"[INST] {query} [/INST]" ''')
+    
+# Parse the response to get the Bloom's Taxonomy classifications
+    return (response[:5])
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 def validate_vm_number(vm_number): 
@@ -228,6 +286,7 @@ if (st.session_state.val_user and st.session_state.val_vm !=None):
 
     
     if doc_mode:
+        
         compression_mode = st.sidebar.toggle(label="Context Compression", help="compress text before passing to LLM, *may help with inconsistent response*")
 
         # NOTE: THE KEY OF THE DICTIONARY IS CASE-SENSITIVE
@@ -264,7 +323,7 @@ if (st.session_state.val_user and st.session_state.val_vm !=None):
         # Chat model selection
         chat_model_name = st.sidebar.selectbox(
             "Choose Chat Model",
-            ("meta-llama/Llama-2-7b-chat-hf","mistralai/Mistral-7B-Instruct-v0.1","meta-llama/Llama-2-13b-chat-hf",),index=2, help='Various supported LLMs, **Default : Llama 7B** gives good results')
+            ("meta-llama/Llama-2-7b-chat-hf","mistralai/Mistral-7B-Instruct-v0.2","meta-llama/Llama-2-13b-chat-hf",),index=2, help='Various supported LLMs, **Default : Llama 7B** gives good results')
 
         if department and semester and subject:
             # Path to pdf documents
@@ -323,7 +382,7 @@ if (st.session_state.val_user and st.session_state.val_vm !=None):
                     ensemble_retriever = EnsembleRetriever(retrievers=[bm25_retriever, faiss_retriever], weights=[0.3, 0.7])
 
                     user_query = st.chat_input("Enter your query here ....")
-
+                    
                     if user_query is not None:
                         # Continue with the code execution
                         docs = ensemble_retriever.get_relevant_documents(user_query)
@@ -405,8 +464,8 @@ if (st.session_state.val_user and st.session_state.val_vm !=None):
                             st.session_state.messages.append({"role": "user", "content": user_query})
                             st.session_state.messages.append({"role": "ai", "content": response})
 
-                            database = conn.read(worksheet='Sheet1', usecols=list(range(15)),ttl=0)
-
+                            database = conn.read(worksheet='Sheet1', usecols=list(range(16)),ttl=0)
+                            blooms_classification = bloom_analysis(user_query)
                             # Creating a new entry
                             new_data_entry = pd.DataFrame({
                                 'user_name': [st.session_state.val_user],
@@ -424,11 +483,13 @@ if (st.session_state.val_user and st.session_state.val_vm !=None):
                                 'discrimination':[query_analysis_array[1]],
                                 'academic absence' :[query_analysis_array[2]],
                                 'harmful intent':[query_analysis_array[3]],
+                                'blooms classification': [blooms_classification]
                             })
                             # Concatenating the new entry to the existing DataFrame
                             new_database = pd.concat([new_data_entry, database], ignore_index=True)
                             conn.update(worksheet='Sheet1',data=new_database)
-
+                            response = response + f''' 
+                    :red[BLOOMS CLASSIFICATION : {blooms_classification}]'''
 
                             # Display LM output
                             with st.chat_message("user", avatar="🟢"):
@@ -447,7 +508,7 @@ if (st.session_state.val_user and st.session_state.val_vm !=None):
 
     else:
         chat_model_name = st.sidebar.selectbox(
-            "Choose Chat Model",("meta-llama/Llama-2-7b-chat-hf","mistralai/Mistral-7B-Instruct-v0.1","meta-llama/Llama-2-13b-chat-hf", ),index=0,help='Various supported LLMs, **Default : Llama 7B** gives good results')
+            "Choose Chat Model",("meta-llama/Llama-2-7b-chat-hf","mistralai/Mistral-7B-Instruct-v0.2","meta-llama/Llama-2-13b-chat-hf", ),index=0,help='Various supported LLMs, **Default : Llama 7B** gives good results')
         user_query = st.chat_input("Enter your query here ....")
 
         def chat_model(model_name):
@@ -516,8 +577,8 @@ if (st.session_state.val_user and st.session_state.val_vm !=None):
                     doc_mode=False
 
                     # Creating a new entry
-                    database = conn.read(worksheet='Sheet1', usecols=list(range(15)),ttl=0)
-
+                    database = conn.read(worksheet='Sheet1', usecols=list(range(16)),ttl=0)
+                    blooms_classification = bloom_analysis(user_query)
                     # Creating a new entry
                     new_data_entry = pd.DataFrame({
                         'user_name': [st.session_state.val_user],
@@ -535,12 +596,15 @@ if (st.session_state.val_user and st.session_state.val_vm !=None):
                         'discrimination':[query_analysis_array[1]],
                         'academic absence' :[query_analysis_array[2]],
                         'harmful intent':[query_analysis_array[3]],
+                        'blooms classification': [blooms_classification]
                     })
 
                     # Concatenating the new entry to the existing DataFrame
                     new_database = pd.concat([new_data_entry, database], ignore_index=True)
                     conn.update(worksheet='Sheet1',data=new_database)
-
+                    
+                    response = response + f''' 
+                    :red[BLOOMS CLASSIFICATION : {blooms_classification}]'''
 
                     # Display LM output
                     with st.chat_message("user", avatar="🟢"):
