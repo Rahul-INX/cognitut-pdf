@@ -189,23 +189,6 @@ QUERY = Discuss the principles of Newton's laws of motion in an educational cont
     return (response[:5])
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 def validate_vm_number(vm_number): 
     # Strip leading and trailing whitespaces
     vm_number_stripped = vm_number.strip() 
@@ -292,7 +275,9 @@ if (st.session_state.val_user and st.session_state.val_vm !=None):
         # NOTE: THE KEY OF THE DICTIONARY IS CASE-SENSITIVE
         all_subjects = {
             "CSE": {"Semester 7": ["Cloud Computing","Principles Of Management","Cyber Forensics","Cryptography And Network Security","Blockchain Technology"],
-            },
+                    "Semester 8" : ["Final Project"],
+                    "Semester 6":["Artificial Intelligence"]
+                    },
             "IT": {
                  'Semester 7': ['Mobile Application Development', 'Cryptography And Network Security', 'Renewable Energy Sources'],
                 # 'Semester 6': ['IT SubjectA', 'IT SubjectB', 'IT SubjectC'],
