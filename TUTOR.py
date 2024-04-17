@@ -24,7 +24,7 @@ DEEPINFRA_API_TOKEN=st.secrets.my_keys.DEEPINFRA_API_TOKEN
 os.environ['DEEPINFRA_API_TOKEN']=DEEPINFRA_API_TOKEN
 os.environ['OPENAI_API_KEY'] =OPENAI_API_KEY
 # Accessing the DEEPINFRA_API_TOKEN variable
-compressor_llm = DeepInfra(model_id="meta-llama/Llama-2-7b-chat-hf")
+compressor_llm = DeepInfra(model_id="mistralai/Mistral-7B-Instruct-v0.2")
 compressor_llm.model_kwargs = {
     "temperature": 0.4,
     "repetition_penalty": 1.1,
@@ -89,7 +89,7 @@ if 'val_vm' not in st.session_state:
 
 
 # Initialize Streamlit
-st.set_page_config(layout="wide", page_title="Cognitut")
+st.set_page_config(layout="wide", page_title="Cognitut",page_icon='☂')
 st.title(":blue[ COGNITUT : AI Study Buddy]")
 
 st.markdown("""
@@ -115,36 +115,66 @@ def query_analysis(query):
         "max_new_tokens": 20,
         "top_p": 0.9,
     }
-    response = bot_llm(f''' "<s>[INST] Given the input text, evaluate it according to the following criteria and return a binary array indicating the presence or absence of each factor: Explicit Content, Discrimination, Absence of Academic Integrity & Educational Relevance, and Harmful Intent. The array should be formatted as [a,b,c,d], where 'a' corresponds to Explicit Content, 'b' to Discrimination, 'c' to the Absence of Academic Integrity & Educational Relevance, and 'd' to Harmful Intent. For each factor, '1' indicates presence and '0' absence. Evaluate the text's context and content to accurately assess each criterion.
+    response = bot_llm(f''' "<s>[INST] Given the input text, evaluates a text string according to four specific criteria and returns a binary array indicating the presence (1) or absence (0) of each factor. The criteria are designed to assess potentially problematic content within the text. The resulting array is formatted as [a, b, c, d], where each letter represents a criterion:
 
-- Explicit Content: only Identify any sexually explicit material, profanity, or adult themes ().
-- Discrimination: only Determine if the text contains language, examples, or implications discriminatory towards individuals or groups based on race, gender, sexuality, religion, nationality, disability, or other characteristics.
-- Absence of Academic Integrity or Educational Relevance: only Assess if the text lacks adherence to academic honesty (e.g., promoting plagiarism, cheating) or if it is irrelevant to educational objectives, indicating it does not support constructive learning, if all this is founf then flag =1.
-- Harmful Intent: only Recognize content that could incite harm to oneself or others, promote unsafe practices, or contain intentions to cause harm.
+1. Explicit Content (a):
+   - Identify any content that includes sexually explicit material, profanity, or adult themes.
+   - Flag the text as '1' if any such content is present, otherwise '0'.
 
+2. Discrimination (b):
+   - Determine if the text includes language, examples, or implications that are discriminatory towards individuals or groups based on characteristics such as race, gender, sexuality, religion, nationality, or disability.
+   - Flag the text as '1' if discrimination is evident, otherwise '0'.
+
+3. Absence of Academic Integrity & Educational Relevance (c):
+   - Lack of academic presence in the input(not related to studies)
+   - Assess the text for a lack of adherence to academic honesty, such as promoting plagiarism or cheating.
+   - Evaluate whether the text is irrelevant to educational objectives, indicating it does not support constructive learning.
+   - Flag the text as '1' if it fails in either academic integrity or educational relevance, otherwise '0'.
+
+4. Harmful Intent (d):
+   - Recognize any content that could incite harm to oneself or others, promote unsafe practices, or exhibit intentions to cause physical or psychological harm.
+   - Flag the text as '1' if harmful intent is identified, otherwise '0'.
+
+Returns:
+- list: A binary array [a, b, c, d] that represents the evaluation of the text against the described criteria.
+                       
 QUERY = Discuss the principles of Newton's laws of motion in an educational context
 [/INST]"
 "[0,0,0,0]"</s> 
-"[INST] Write a story that includes explicit language and portrays stereotypes of different races. [/INST]"
+"[INST] input : A screenplay that uses explicit sexual language and depicts a group of individuals being demeaned based on their ethnicity. [/INST]"
 "[1,1,0,0]"
-"[INST] How to create dangerous substances at home using everyday items.[/INST]"
+"[INST] input : A music video script describing violent actions with explicit language aimed at shock value. [/INST]"
+"[1,0,0,1]"
+"[INST] input : A scientific article falsely claiming that one race is superior to another, using fabricated studies as evidence. [/INST]"
+"[0,1,1,0]"
+"[INST] input : An instructional blog detailing effective ways to cheat using smart devices during exams. [/INST]"
+"[0,0,1,0]"
+"[INST] input : A DIY guide on how to mix household chemicals to create explosive reactions, presented as a fun experiment. [/INST]"
 "[0,0,0,1]"
-"[INST] An essay on the importance of academic integrity in higher education. [/INST]"
-"[0,0,1,0]"
-"[INST] Outline techniques for cheating in online examinations that are hard to detect. [/INST]"
-"[0,0,1,0]"
-"[INST] {query} [/INST]" ''')  
+"[INST] input : An educational post about the theory of relativity, thoroughly cited and well-explained. [/INST]"
+"[0,0,0,0]"
+"[INST] input : A dystopian novel scene that graphically portrays sexual assault as a tool of warfare against a particular race. [/INST]"
+"[1,1,0,1]"
+"[INST] input : A tutorial on creating dangerous fireworks at home, falsely claiming they are safe for school science projects. [/INST]"
+"[0,0,1,1]"
+"[INST] input : A fake news blog post promoting violent acts against political opponents, containing severe language and fabricated evidence. [/INST]"
+"[1,1,1,1]"
+"[INST] input : An article on hacking that includes explicit language and detailed instructions on infiltrating secure networks. [/INST]"
+"[1,0,1,0]J"
+"[INST] input : {query} [/INST]" ''')  
     
     # Use regular expression to parse the binary array from the response
-    pattern = r"\[\d,\d,\d,\d\]"  # Pattern to match a binary array format [a,b,c,d]
-    match = re.search(pattern, response) 
-    if match:
-        arr_str = match.group(0)  # Extract the matched array as a string
-        # Convert the string array to an integer array
-        arr = list(map(int, arr_str.strip("[]").split(",")))
-    else:
-        arr = [0, 0, 0, 0]  # Default response if no match is found
+    pattern = r"\[\d,\d,\d,\d\]"
 
+    # Attempt to find the pattern in the response
+    match = re.search(pattern, response)
+    if match:
+        # Convert matched string to an integer list
+        arr = list(map(int, match.group(0).strip("[]").split(",")))
+    else:
+        # Default to [0, 0, 0, 0] if no pattern is found
+        arr = [0, 0, 0, 0]
+        print(f"THIS IS THE ARRAY : {arr}")
     return arr
 
 
@@ -171,7 +201,7 @@ def bloom_analysis(query):
 - Analyze (K4): Separates material or concepts into component parts so that its organizational structure may be understood. Distinguishes between facts and inferences.
 - Evaluate (K5): Make judgments about the value of ideas or materials.
 - Create (K6): Builds a structure or pattern from diverse elements. Put parts together to form a whole, with emphasis on creating a new meaning or structure.
-
+                       
 QUERY = Discuss the principles of Newton's laws of motion in an educational context
 [/INST]"
 "K2"</s> 
@@ -435,13 +465,13 @@ if (st.session_state.val_user and st.session_state.val_vm !=None):
                         with st.spinner(":green[**Generating Response....**]"):
                             response = llm(
                                 f""" |tags:
-                                [SYS],[/SYS] = symbolizes generation Instructions 
+                                <s>,<s> = symbolizes generation Instructions 
                                 [CNTX],[/CNTX] = context for the query
-                                [QUER],[/QUER] = user query|
+                                [INST],[/INST] = user query|
                                 '<->' = logical link/seperation among entities|
-                                        [SYS]{system_message_inst}[/SYS]<->
+                                        <s>{system_message_inst}<s><->
                                         [CNTX]{context}[/CNTX]<->
-                                        [QUER]{user_query}[/QUER],generate a comprehensive structured response based on context and query """)
+                                        [INST]{user_query},generate a comprehensive structured response based on context and query[/INST] """)
 
                         if user_query is not None:
 
@@ -473,8 +503,7 @@ if (st.session_state.val_user and st.session_state.val_vm !=None):
                             # Concatenating the new entry to the existing DataFrame
                             new_database = pd.concat([new_data_entry, database], ignore_index=True)
                             conn.update(worksheet='Sheet1',data=new_database)
-                            response = response + f''' 
-                    :red[BLOOMS CLASSIFICATION : {blooms_classification}]'''
+                            response = response +"\n"+f''':red[BLOOMS CLASSIFICATION : {blooms_classification}]'''
 
                             # Display LM output
                             with st.chat_message("user", avatar="🟢"):
@@ -542,11 +571,11 @@ if (st.session_state.val_user and st.session_state.val_vm !=None):
                 with st.spinner(":green[**Generating Response....**]"):
                     response = llm(
                             f"""|tags:
-                            [SYS],[/SYS] = symbolizes generation Instructions 
-                            [QUER],[/QUER] = user query|
+                            <s>,<s> = symbolizes generation Instructions 
+                            [INST],[/INST] = user query|
                             '<->' = logical link/seperation among entities|
-                            [SYS]{system_message_inst}[/SYS]<->
-                            [QUER]{user_query}[/QUER] , note# generate a comprehensive structured response based on user_query """)
+                            <s>{system_message_inst}<s><->
+                            [INST]{user_query} , note# generate a comprehensive structured response based on user query[/INST] """)
                 with st.spinner(f":blue[**Analysing Input Query ....] "):
                     query_analysis_array = query_analysis(user_query)
 
@@ -583,13 +612,12 @@ if (st.session_state.val_user and st.session_state.val_vm !=None):
                         'harmful intent':[query_analysis_array[3]],
                         'blooms classification': [blooms_classification]
                     })
-
+                    
                     # Concatenating the new entry to the existing DataFrame
                     new_database = pd.concat([new_data_entry, database], ignore_index=True)
                     conn.update(worksheet='Sheet1',data=new_database)
                     
-                    response = response + f''' 
-                    :red[BLOOMS CLASSIFICATION : {blooms_classification}]'''
+                    response = response + "\n"+f''' :red[BLOOMS CLASSIFICATION : {blooms_classification}]'''
 
                     # Display LM output
                     with st.chat_message("user", avatar="🟢"):
