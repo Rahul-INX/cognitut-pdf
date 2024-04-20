@@ -174,7 +174,6 @@ QUERY = Discuss the principles of Newton's laws of motion in an educational cont
     else:
         # Default to [0, 0, 0, 0] if no pattern is found
         arr = [0, 0, 0, 0]
-        print(f"THIS IS THE ARRAY : {arr}")
     return arr
 
 
@@ -338,7 +337,7 @@ if (st.session_state.val_user and st.session_state.val_vm !=None):
         # Chat model selection
         chat_model_name = st.sidebar.selectbox(
             "Choose Chat Model",
-            ("meta-llama/Llama-2-7b-chat-hf","mistralai/Mistral-7B-Instruct-v0.2","meta-llama/Llama-2-13b-chat-hf",),index=2, help='Various supported LLMs, **Default : Llama 7B** gives good results')
+            ("meta-llama/Llama-2-7b-chat-hf","mistralai/Mistral-7B-Instruct-v0.2","meta-llama/Llama-2-13b-chat-hf","meta-llama/Meta-Llama-3-8B-Instruct"),index=2, help='Various supported LLMs, **Default : Llama 7B** gives good results')
 
         if department and semester and subject:
             # Path to pdf documents
@@ -522,7 +521,7 @@ if (st.session_state.val_user and st.session_state.val_vm !=None):
 
     else:
         chat_model_name = st.sidebar.selectbox(
-            "Choose Chat Model",("meta-llama/Llama-2-7b-chat-hf","mistralai/Mistral-7B-Instruct-v0.2","meta-llama/Llama-2-13b-chat-hf", ),index=0,help='Various supported LLMs, **Default : Llama 7B** gives good results')
+            "Choose Chat Model",("meta-llama/Llama-2-7b-chat-hf","mistralai/Mistral-7B-Instruct-v0.2","meta-llama/Llama-2-13b-chat-hf","meta-llama/Meta-Llama-3-8B-Instruct" ),index=0,help='Various supported LLMs, **Default : Llama 7B** gives good results')
         user_query = st.chat_input("Enter your query here ....")
 
         def chat_model(model_name):
