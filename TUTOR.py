@@ -304,7 +304,7 @@ if (st.session_state.val_user and st.session_state.val_vm !=None):
         # NOTE: THE KEY OF THE DICTIONARY IS CASE-SENSITIVE
         all_subjects = {
             "CSE": {"Semester 7": ["Cloud Computing","Principles Of Management","Cyber Forensics","Cryptography And Network Security","Blockchain Technology"],
-                    "Semester 8" : ["Final Project"],
+                    "Semester 8" : ["Final Project","Design Thinking","Professional Ethics In Engineering"],
                     "Semester 6":["Artificial Intelligence"]
                     },
             "IT": {
